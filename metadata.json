@@ -1,0 +1,7 @@
+{
+  "name": "Personal Workbench",
+  "description": "邹大炮的个人生活、工作、学习入口中心，所有数字资产的一站式入口，基于 Neo-Brutalism v4 设计系统构建",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
