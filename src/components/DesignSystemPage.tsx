@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ArrowLeft,
   Copy,
   Check,
   Sparkles,
@@ -22,10 +21,11 @@ import { V4Badge } from './v4/V4Badge';
 import { V4StatusDot } from './v4/V4StatusDot';
 import { V4Section } from './v4/V4Section';
 import { V4ResourceCard } from './v4/V4ResourceCard';
+import { WorkbenchLogo } from './v4/WorkbenchLogo';
 import { WorkbenchObject, TYPE_VISUAL_MAP, ObjectType } from '../types';
 
 interface DesignSystemPageProps {
-  onBackToWorkbench: () => void;
+  onBackToWorkbench?: () => void;
 }
 
 export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({ onBackToWorkbench }) => {
@@ -145,53 +145,30 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({ onBackToWork
   ];
 
   return (
-    <div className="w-full min-h-screen bg-[#FBF7EF] text-[#171717]">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#FFFFFF] border-b-2 border-[#171717] px-4 sm:px-8 py-3.5 shadow-[0_2px_0_#EDE8DC]">
-        <div className="max-w-[1200px] mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onBackToWorkbench}
-              className="v4-btn v4-btn-default px-3 py-1.5 text-xs flex items-center gap-1.5"
-              title="返回工作台"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>返回工作台</span>
-            </button>
-            <div className="h-5 w-[2px] bg-[#EDE8DC]" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#171717]">
-                  Neo-Brutalism v4 设计规范库
-                </h1>
-                <span className="px-2 py-0.5 text-xs font-mono font-bold bg-[#FFD84D] border border-[#171717] rounded shadow-[2px_2px_0_#171717]">
-                  权威标准
-                </span>
-              </div>
-              <p className="text-xs text-[#5F5E5A] font-mono">
-                /design-system · 纯客户端硬编码独立校验预览
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 text-xs font-mono font-bold bg-[#FBF7EF] border border-[#171717] rounded-md flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#A9E5C3] border border-[#171717]" />
-              8 类核心组件 · 14 组 Tokens
-            </span>
-          </div>
+    <div className="w-full min-h-screen bg-[#FBF7EF] text-[#171717] pb-16">
+      {/* Sub Header / Page Title Bar - Clear Neo-Brutalist separation */}
+      <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-6 pb-4 mb-2 border-b-2 border-[#171717] flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-bold text-[#171717] tracking-tight">Neo-Brutalism v4 规范库</h2>
+          <span className="px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFD84D] border border-[#171717] rounded shadow-[1px_1px_0_#171717]">
+            权威标准
+          </span>
         </div>
-      </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8 space-y-12">
+        <div className="flex items-center gap-2 text-xs font-mono font-semibold text-[#5F5E5A]">
+          <span className="w-2 h-2 rounded-full bg-[#10B981] border border-[#171717]" />
+          <span>8 类核心组件 · 14 组 Tokens</span>
+        </div>
+      </div>
+
+      {/* Main Content Area - 80% Width consistent with Workbench */}
+      <main className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-6 space-y-12">
         {/* Intro Banner */}
         <section className="bg-[#FFFFFF] border-2 border-[#171717] rounded-xl p-6 shadow-[6px_6px_0_#171717]">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-[#171717] fill-[#FFD84D]" />
+              <div className="flex items-center gap-3 mb-2">
+                <WorkbenchLogo className="w-8 h-8" />
                 <h2 className="text-xl font-bold tracking-tight">
                   Personal Workbench · 视觉规范总览
                 </h2>
@@ -473,97 +450,136 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({ onBackToWork
             <span className="text-xs text-[#5F5E5A] font-mono">Small · Wide · Large · Banner</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
             {/* Small Card (2 cols) */}
-            <div className="col-span-1 sm:col-span-1 lg:col-span-2 min-h-[192px]">
-              <div className="text-xs font-mono font-bold text-[#5F5E5A] mb-1.5 flex items-center justify-between">
-                <span>Small (2 Cols)</span>
-                <span className="text-[10px] bg-[#EDE8DC] px-1 rounded">h: 192px</span>
+            <div className="col-span-1 sm:col-span-1 lg:col-span-2 flex flex-col gap-2">
+              <div className="text-xs font-mono font-bold text-[#5F5E5A] px-1 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[#171717]">
+                  <span className="w-2 h-2 rounded-full bg-[#FFD84D] border border-[#171717]" />
+                  Small (2 Cols 标准单元)
+                </span>
+                <span className="text-[10px] font-mono bg-[#EDE8DC] border border-[#171717] px-1.5 py-0.5 rounded shadow-[1px_1px_0_#171717]">
+                  高度: 192px
+                </span>
               </div>
-              <V4ResourceCard
-                object={sampleCardSmall}
-                isOwner={true}
-                editMode={false}
-                onSelect={(obj) => setSelectedCardId(obj.id)}
-              />
+              <div className="h-[192px] w-full">
+                <V4ResourceCard
+                  object={sampleCardSmall}
+                  isOwner={true}
+                  editMode={false}
+                  onSelect={(obj) => setSelectedCardId(obj.id)}
+                />
+              </div>
             </div>
 
             {/* Wide Card (4 cols) */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-4 min-h-[192px]">
-              <div className="text-xs font-mono font-bold text-[#5F5E5A] mb-1.5 flex items-center justify-between">
-                <span>Wide (4 Cols)</span>
-                <span className="text-[10px] bg-[#EDE8DC] px-1 rounded">h: 192px</span>
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col gap-2">
+              <div className="text-xs font-mono font-bold text-[#5F5E5A] px-1 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[#171717]">
+                  <span className="w-2 h-2 rounded-full bg-[#FFD84D] border border-[#171717]" />
+                  Wide (4 Cols 双倍宽卡片)
+                </span>
+                <span className="text-[10px] font-mono bg-[#EDE8DC] border border-[#171717] px-1.5 py-0.5 rounded shadow-[1px_1px_0_#171717]">
+                  高度: 192px
+                </span>
               </div>
-              <V4ResourceCard
-                object={sampleCardWide}
-                isOwner={true}
-                editMode={false}
-                onSelect={(obj) => setSelectedCardId(obj.id)}
-              />
+              <div className="h-[192px] w-full">
+                <V4ResourceCard
+                  object={sampleCardWide}
+                  isOwner={true}
+                  editMode={false}
+                  onSelect={(obj) => setSelectedCardId(obj.id)}
+                />
+              </div>
             </div>
 
-            {/* Large Card (4 cols x 2 rows = min-h-[396px]) */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-4 min-h-[396px]">
-              <div className="text-xs font-mono font-bold text-[#5F5E5A] mb-1.5 flex items-center justify-between">
-                <span>Large (4 Cols × 2 Rows)</span>
-                <span className="text-[10px] bg-[#EDE8DC] px-1 rounded">h: 396px</span>
+            {/* Large Card (4 cols x 2 rows) */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col gap-2">
+              <div className="text-xs font-mono font-bold text-[#5F5E5A] px-1 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[#171717]">
+                  <span className="w-2 h-2 rounded-full bg-[#FFD84D] border border-[#171717]" />
+                  Large (4 Cols × 2 Rows 大尺寸)
+                </span>
+                <span className="text-[10px] font-mono bg-[#EDE8DC] border border-[#171717] px-1.5 py-0.5 rounded shadow-[1px_1px_0_#171717]">
+                  高度: 396px
+                </span>
               </div>
-              <V4ResourceCard
-                object={sampleCardLarge}
-                isOwner={true}
-                editMode={false}
-                onSelect={(obj) => setSelectedCardId(obj.id)}
-              />
+              <div className="h-[396px] w-full">
+                <V4ResourceCard
+                  object={sampleCardLarge}
+                  isOwner={true}
+                  editMode={false}
+                  onSelect={(obj) => setSelectedCardId(obj.id)}
+                />
+              </div>
             </div>
 
             {/* Aside Spec Explainer (2 cols) */}
-            <div className="col-span-1 sm:col-span-1 lg:col-span-2 min-h-[396px] bg-[#FFFFFF] border-2 border-[#171717] rounded-xl p-5 shadow-[4px_4px_0_#171717] flex flex-col justify-between">
-              <div>
-                <h4 className="text-sm font-bold text-[#171717] mb-2">卡片排版防溢出准则</h4>
-                <ul className="text-xs text-[#5F5E5A] space-y-2 leading-relaxed">
-                  <li className="flex items-start gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
-                    <span>
-                      <strong>Small:</strong> 仅显示标题与 URL Chip，省略正文摘要。
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
-                    <span>
-                      <strong>Wide:</strong> 单行截断描述 (line-clamp-1)。
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
-                    <span>
-                      <strong>Large:</strong> 双行描述 (line-clamp-2) 并展示完整标签 Chips。
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
-                    <span>
-                      <strong>高度对齐:</strong> 2行单元高度 192px，4行单元高度 396px，杜绝重叠。
-                    </span>
-                  </li>
-                </ul>
+            <div className="col-span-1 sm:col-span-1 lg:col-span-2 flex flex-col gap-2">
+              <div className="text-xs font-mono font-bold text-[#5F5E5A] px-1 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[#171717]">
+                  <span className="w-2 h-2 rounded-full bg-[#A9E5C3] border border-[#171717]" />
+                  排版规格防溢出准则
+                </span>
+                <span className="text-[10px] font-mono bg-[#EDE8DC] border border-[#171717] px-1.5 py-0.5 rounded shadow-[1px_1px_0_#171717]">
+                  高度: 396px
+                </span>
               </div>
-              <div className="p-3 bg-[#FBF7EF] border border-[#171717] rounded-lg text-xs font-mono">
-                当前选中卡片 ID: <span className="font-bold text-[#171717]">{selectedCardId}</span>
+              <div className="h-[396px] w-full bg-[#FFFFFF] border-2 border-[#171717] rounded-xl p-5 shadow-[4px_4px_0_#171717] flex flex-col justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-[#171717] mb-2">卡片排版防溢出准则</h4>
+                  <ul className="text-xs text-[#5F5E5A] space-y-2 leading-relaxed">
+                    <li className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
+                      <span>
+                        <strong>Small:</strong> 仅显示标题与 URL Chip，省略正文摘要。
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
+                      <span>
+                        <strong>Wide:</strong> 单行截断描述 (line-clamp-1)。
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
+                      <span>
+                        <strong>Large:</strong> 双行描述 (line-clamp-2) 并展示完整标签 Chips。
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#171717] mt-1.5 shrink-0" />
+                      <span>
+                        <strong>高度对齐:</strong> 2行单元高度 192px，4行单元高度 396px，杜绝重叠。
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="p-3 bg-[#FBF7EF] border border-[#171717] rounded-lg text-xs font-mono">
+                  当前选中卡片 ID: <span className="font-bold text-[#171717]">{selectedCardId}</span>
+                </div>
               </div>
             </div>
 
             {/* Banner Card (6 cols) */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-6 min-h-[192px]">
-              <div className="text-xs font-mono font-bold text-[#5F5E5A] mb-1.5 flex items-center justify-between">
-                <span>Banner (6 Cols - 全宽横幅通栏)</span>
-                <span className="text-[10px] bg-[#EDE8DC] px-1 rounded">h: 192px</span>
+            <div className="col-span-1 sm:col-span-2 lg:col-span-6 flex flex-col gap-2">
+              <div className="text-xs font-mono font-bold text-[#5F5E5A] px-1 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[#171717]">
+                  <span className="w-2 h-2 rounded-full bg-[#FFD84D] border border-[#171717]" />
+                  Banner (6 Cols 全宽通栏卡片)
+                </span>
+                <span className="text-[10px] font-mono bg-[#EDE8DC] border border-[#171717] px-1.5 py-0.5 rounded shadow-[1px_1px_0_#171717]">
+                  高度: 192px
+                </span>
               </div>
-              <V4ResourceCard
-                object={sampleCardBanner}
-                isOwner={true}
-                editMode={false}
-                onSelect={(obj) => setSelectedCardId(obj.id)}
-              />
+              <div className="h-[192px] w-full">
+                <V4ResourceCard
+                  object={sampleCardBanner}
+                  isOwner={true}
+                  editMode={false}
+                  onSelect={(obj) => setSelectedCardId(obj.id)}
+                />
+              </div>
             </div>
           </div>
         </section>

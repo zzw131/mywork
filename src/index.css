@@ -144,12 +144,13 @@ body {
 .v4-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 3px 8px;
-  border: var(--v4-bw-thin) solid var(--v4-ink);
-  border-radius: 6px;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  min-height: 36px;
+  border: var(--v4-bw) solid var(--v4-ink);
+  border-radius: 8px;
   background-color: var(--v4-surface);
   box-shadow: var(--v4-shadow-soft);
   transition: all var(--v4-dur) ease;

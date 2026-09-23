@@ -24,14 +24,14 @@ export const V4PinnedSection: React.FC<V4PinnedSectionProps> = ({
   };
 
   return (
-    <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 pt-6 pb-2">
+    <section className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-6 pb-2">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-5 h-5 bg-[#FFD84D] border border-[#171717] rounded shadow-[2px_2px_0_#171717]">
             <Pin className="w-3 h-3 text-[#171717] fill-current" />
           </div>
-          <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase">
-            置顶高频快捷入口 · Pinned Quick Picks
+          <h2 className="text-sm font-bold text-[#171717] tracking-tight">
+            置顶高频快捷入口
           </h2>
         </div>
         <span className="text-xs font-mono font-semibold text-[#5F5E5A]">

@@ -13,9 +13,9 @@ export const V4Badge: React.FC<V4BadgeProps> = ({ type, showFullLabel = false })
     <span
       className="v4-badge"
       style={{ backgroundColor: visual.accentColor }}
-      title={`类型: ${visual.label}`}
+      title={`分类: ${visual.label}`}
     >
-      {showFullLabel ? visual.label : visual.shortLabel}
+      {showFullLabel ? visual.label : visual.shortLabel || visual.label}
     </span>
   );
 };

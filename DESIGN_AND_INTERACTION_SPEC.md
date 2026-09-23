@@ -9,24 +9,46 @@
 
 ## 目录
 1. [设计理念与反“AI Slop”负向清单](#1-设计理念与反ai-slop负向清单)
-2. [设计系统基础（Design Tokens）](#2-设计系统基础design-tokens)
-   - 2.1 颜色系统（Color Tokens）
-   - 2.2 阴影与描边规则（Shadows & Borders）
-   - 2.3 字体排版与数学比例（Typography）
-3. [栅格系统与尺寸防溢出数学约束](#3-栅格系统与尺寸防溢出数学约束)
-   - 3.1 6 列响应式栅格与 88px 基础行高公式
-   - 3.2 卡片四种尺寸矩阵（Small / Wide / Large / Banner）
-4. [核心组件交互规范（Component Specs）](#4-核心组件交互规范component-specs)
-   - 4.1 头部与视图切换（V4Header & View Switcher）
-   - 4.2 检索与标签过滤器（V4SearchToolbar & V4Tag）
-   - 4.3 资源卡片（V4ResourceCard）
-   - 4.4 按钮与输入框（V4Button & V4Input）
-   - 4.5 状态圆点与类型徽章（V4StatusDot & V4Badge）
-   - 4.6 底部全局状态栏（V4Footer）
-5. [权限系统与状态机交互](#5-权限系统与状态机交互)
-   - 5.1 访客模式（Guest）vs 拥有者模式（Owner）
-   - 5.2 布局编辑模式（Edit Mode）
-6. [AI 审查自检核对表（Audit Checklist）](#6-ai-审查自检核对表audit-checklist)
+2. [官方 Logo 与品牌标识（Official Brand Logo）](#2-官方-logo-与品牌标识official-brand-logo)
+3. [设计系统基础（Design Tokens）](#3-设计系统基础design-tokens)
+   - 3.1 颜色系统（Color Tokens）
+   - 3.2 阴影与描边规则（Shadows & Borders）
+   - 3.3 字体排版与数学比例（Typography）
+4. [栅格系统与尺寸防溢出数学约束](#4-栅格系统与尺寸防溢出数学约束)
+   - 4.1 6 列响应式栅格与 88px 基础行高公式
+   - 4.2 卡片四种尺寸矩阵（Small / Wide / Large / Banner）
+5. [核心组件交互规范（Component Specs）](#5-核心组件交互规范component-specs)
+   - 5.1 头部与视图切换（V4Header & View Switcher）
+   - 5.2 检索与标签过滤器（V4SearchToolbar & V4Tag）
+   - 5.3 资源卡片（V4ResourceCard）
+   - 5.4 按钮与输入框（V4Button & V4Input）
+   - 5.5 状态圆点与类型徽章（V4StatusDot & V4Badge）
+   - 5.6 底部全局状态栏（V4Footer）
+6. [权限系统与状态机交互](#6-权限系统与状态机交互)
+   - 6.1 访客模式（Guest）vs 拥有者模式（Owner）
+   - 6.2 布局编辑模式（Edit Mode）
+7. [AI 审查自检核对表（Audit Checklist）](#7-ai-审查自检核对表audit-checklist)
+
+---
+
+## 2. 官方 Logo 与品牌标识（Official Brand Logo）
+
+> **重要标识原则**：全站所有页面的官方 Logo 恒定且唯一，统一采用 `<WorkbenchLogo />` 组件（矢量图形源文件位于 `/public/logo.svg` 与 `/public/favicon.svg`）。**严禁随意替换或回退为纯文字缩写。**
+
+- **Logo 视觉构成**：
+  1. **基底轮廓**：Neo-Brutalism 黄色圆角卡片（`#FFCD29`），4.5px 纯黑外描边（`#171717`）与右下方向 3D 实心硬阴影（Offset `+6px, +6px`，`#171717`）。
+  2. **工坊工作台图案**：
+     - **左侧核心屏幕**：主工作显示器圆角矩形；
+     - **右侧双模块**：上下两个平行排列的组件面板/层叠窗口；
+     - **一体式工作台面**：横贯底部的厚实支撑桌面；
+     - **坚固双桌腿**：左右两侧对称立柱桌腿。
+- **全站使用场景**：
+  - **浏览器 Favicon**：`/public/favicon.svg`；
+  - **全局顶栏（V4Header）**：`<WorkbenchLogo className="w-9 h-9" />`；
+  - **全局页脚（V4Footer）**：`<WorkbenchLogo className="w-6 h-6" />`；
+  - **规范库（DesignSystemPage）**：展示于核心 Banner 标题区。
+
+---
 
 ---
 

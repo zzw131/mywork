@@ -21,7 +21,7 @@ export const V4EditToolbar: React.FC<V4EditToolbarProps> = ({
       data-testid="edit-toolbar"
       className="sticky top-0 z-30 w-full bg-[#FFD84D] border-b-2 border-[#171717] py-2.5 px-4 sm:px-8 shadow-[0_4px_0_#171717]"
     >
-      <div className="max-w-[1200px] mx-auto flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm font-bold text-[#171717]">
+      <div className="w-full flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm font-bold text-[#171717]">
         <div className="flex items-center gap-2">
           <span className="flex items-center justify-center w-5 h-5 bg-[#171717] text-[#FFFFFF] rounded-full text-xs">
             !

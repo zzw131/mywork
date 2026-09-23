@@ -27,7 +27,7 @@ export const TagPanel: React.FC<TagPanelProps> = ({
   const hasMore = tags.length > topLimit;
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 py-2">
+    <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-6 sm:pt-7 pb-2.5">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
         <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5F5E5A]">
           <Tag className="w-3.5 h-3.5 text-[#171717]" />
@@ -63,7 +63,8 @@ export const TagPanel: React.FC<TagPanelProps> = ({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Tags List Container - flex-wrap with a small gap for compact, balanced wrapping */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {visibleTags.map(({ tag, count }) => {
           const isSelected = selectedTag === tag;
           return (
@@ -71,10 +72,10 @@ export const TagPanel: React.FC<TagPanelProps> = ({
               key={tag}
               type="button"
               onClick={() => onSelectTag(isSelected ? null : tag)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-medium border border-[#171717] transition-all select-none whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono font-medium border border-[#171717] transition-all select-none whitespace-nowrap cursor-pointer ${
                 isSelected
                   ? 'bg-[#FFD84D] text-[#171717] font-bold shadow-[2px_2px_0_#171717] -translate-y-0.5'
-                  : 'bg-[#FFFFFF] text-[#5F5E5A] hover:text-[#171717] hover:bg-[#FBF7EF] shadow-[1px_1px_0_#171717]'
+                  : 'bg-[#FFFFFF] text-[#5F5E5A] hover:text-[#171717] hover:bg-[#FBF7EF] shadow-[1px_1px_0_#171717] hover:-translate-y-0.5'
               }`}
             >
               <span>#{tag}</span>

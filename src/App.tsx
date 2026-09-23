@@ -14,34 +14,89 @@ import { TagPanel } from './components/layout/TagPanel';
 import { V4PinnedSection } from './components/v4/V4PinnedSection';
 import { V4EditToolbar } from './components/v4/V4EditToolbar';
 import { HomeGrid } from './components/HomeGrid';
-import { DetailModal } from './components/resource/DetailModal';
+import { DetailModal } from './components/v4/DetailModal';
 import { AddResourceModal } from './components/resource/AddResourceModal';
 import { V4Footer } from './components/v4/V4Footer';
 import { DesignSystemPage } from './components/DesignSystemPage';
+import { AdminAuthModal } from './components/v4/AdminAuthModal';
+import { ResourceDetailPage } from './components/v4/ResourceDetailPage';
+
+export type AppView = 'workbench' | 'design-system' | 'resource-detail';
+
+function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
+  if (typeof window === 'undefined') return { view: 'workbench', resourceId: null };
+
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+
+  // 1. Path match: /resource/:id
+  const pathMatch = path.match(/^\/resource\/([^/?#]+)/);
+  if (pathMatch) {
+    return { view: 'resource-detail', resourceId: decodeURIComponent(pathMatch[1]) };
+  }
+
+  // 2. Hash match: #/resource/:id or #resource/:id
+  const hashMatch = hash.match(/^#\/?resource\/([^/?#]+)/);
+  if (hashMatch) {
+    return { view: 'resource-detail', resourceId: decodeURIComponent(hashMatch[1]) };
+  }
+
+  // 3. Design system
+  if (path.includes('design-system') || hash.includes('design-system')) {
+    return { view: 'design-system', resourceId: null };
+  }
+
+  return { view: 'workbench', resourceId: null };
+}
 
 export default function App() {
-  // View toggle: 'workbench' | 'design-system'
-  const [currentView, setCurrentView] = useState<'workbench' | 'design-system'>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      const hash = window.location.hash;
-      if (path.includes('design-system') || hash.includes('design-system')) {
-        return 'design-system';
-      }
+  // View routing: 'workbench' | 'design-system' | 'resource-detail'
+  const [currentRoute, setCurrentRoute] = useState(parseCurrentRoute);
+  const currentView = currentRoute.view;
+  const currentResourceId = currentRoute.resourceId;
+
+  const navigateToResource = (id: string) => {
+    setCurrentRoute({ view: 'resource-detail', resourceId: id });
+    setSelectedObject(null);
+    try {
+      window.history.pushState(
+        { view: 'resource-detail', id },
+        '',
+        `/resource/${encodeURIComponent(id)}`
+      );
+    } catch {
+      window.location.hash = `#/resource/${encodeURIComponent(id)}`;
     }
-    return 'workbench';
-  });
+  };
+
+  const navigateToWorkbench = () => {
+    setCurrentRoute({ view: 'workbench', resourceId: null });
+    try {
+      window.history.pushState({ view: 'workbench' }, '', '/');
+    } catch {
+      window.location.hash = '#';
+    }
+  };
+
+  const navigateToDesignSystem = () => {
+    setCurrentRoute({ view: 'design-system', resourceId: null });
+    try {
+      window.history.pushState({ view: 'design-system' }, '', '/#design-system');
+    } catch {
+      window.location.hash = '#design-system';
+    }
+  };
 
   useEffect(() => {
-    const handleHash = () => {
-      if (window.location.hash.includes('design-system')) {
-        setCurrentView('design-system');
-      } else if (!window.location.hash || window.location.hash === '#') {
-        setCurrentView('workbench');
-      }
+    const handleRouteChange = () => {
+      setCurrentRoute(parseCurrentRoute());
     };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
   }, []);
 
   // Load objects with local persistence
@@ -60,10 +115,19 @@ export default function App() {
     return SEED_OBJECTS;
   });
 
-  // Identity state: defaults to owner, can switch to guest
-  const [identity, setIdentity] = useState<UserIdentity>({
-    role: 'owner',
-    username: '邹大炮',
+  // Identity state: defaults to guest (未登录状态), login as owner requires password (123456)
+  const [identity, setIdentity] = useState<UserIdentity>(() => {
+    try {
+      const isAuth = sessionStorage.getItem('workbench_is_owner') === 'true';
+      if (isAuth) {
+        return { role: 'owner' };
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      role: 'guest',
+    };
   });
 
   // Edit mode state
@@ -81,20 +145,39 @@ export default function App() {
   // Detail overlay state
   const [selectedObject, setSelectedObject] = useState<WorkbenchObject | null>(null);
 
-  // If role changes to guest, immediately turn off edit mode and modal
-  const handleToggleIdentity = () => {
-    setIdentity((prev) => {
-      const newRole = prev.role === 'owner' ? 'guest' : 'owner';
-      if (newRole === 'guest') {
-        setEditMode(false);
-        setIsAddModalOpen(false);
-        setEditingObject(null);
-      }
-      return {
-        role: newRole,
-        username: newRole === 'owner' ? '邹大炮' : '访客 (Guest)',
-      };
+  // Admin password authentication modal state
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
+
+  // Login flow: open password verification modal
+  const handleOpenLogin = () => {
+    setIsAdminAuthModalOpen(true);
+  };
+
+  // On successful password input: elevate to owner and persist in session
+  const handleAdminAuthSuccess = () => {
+    setIdentity({
+      role: 'owner',
     });
+    try {
+      sessionStorage.setItem('workbench_is_owner', 'true');
+    } catch {
+      // ignore
+    }
+  };
+
+  // Logout flow: directly exit to guest with no password required
+  const handleLogout = () => {
+    setIdentity({
+      role: 'guest',
+    });
+    setEditMode(false);
+    setIsAddModalOpen(false);
+    setEditingObject(null);
+    try {
+      sessionStorage.removeItem('workbench_is_owner');
+    } catch {
+      // ignore
+    }
   };
 
   const handleToggleEditMode = () => {
@@ -114,6 +197,7 @@ export default function App() {
       }
       return updated;
     });
+    setSelectedObject((prev) => (prev && prev.id === id ? { ...prev, pinned: !prev.pinned } : prev));
   };
 
   // Delete an object
@@ -128,6 +212,7 @@ export default function App() {
       }
       return updated;
     });
+    setSelectedObject((prev) => (prev && prev.id === id ? null : prev));
   };
 
   // Adjust card size
@@ -225,6 +310,115 @@ export default function App() {
       setIsSaving(false);
     }
   };
+
+  // Global footer and hotkey triggers: ⌘K (search), ESC (close modals/clear filters), Tab (category navigation)
+  const handleTriggerSearch = () => {
+    if (currentView !== 'workbench') {
+      navigateToWorkbench();
+    }
+    window.dispatchEvent(new CustomEvent('workbench:focus-search'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTriggerCloseOrClear = () => {
+    if (selectedObject) {
+      setSelectedObject(null);
+      return;
+    }
+    if (isAddModalOpen) {
+      setIsAddModalOpen(false);
+      setEditingObject(null);
+      return;
+    }
+    if (isAdminAuthModalOpen) {
+      setIsAdminAuthModalOpen(false);
+      return;
+    }
+    if (searchQuery) {
+      setSearchQuery('');
+      window.dispatchEvent(new CustomEvent('workbench:clear-search'));
+      return;
+    }
+    if (selectedCategory !== 'all') {
+      setSelectedCategory('all');
+      return;
+    }
+    if (editMode) {
+      setEditMode(false);
+    }
+  };
+
+  const handleTriggerTabNavigate = (direction: number = 1) => {
+    if (currentView !== 'workbench') {
+      navigateToWorkbench();
+    }
+    const categories: FilterCategory[] = ['all', 'project', 'tool', 'web', 'learning', 'reference'];
+    const curIdx = categories.indexOf(selectedCategory);
+    const nextIdx = (curIdx + direction + categories.length) % categories.length;
+    setSelectedCategory(categories[nextIdx]);
+  };
+
+  // Global keydown handler for ⌘K and Escape across the entire app
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toUpperCase();
+      const isEditingText = targetTag === 'INPUT' || targetTag === 'TEXTAREA';
+
+      // 1. ⌘K or Ctrl+K or '/' (when not typing in form inputs): Focus search
+      if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!isEditingText && e.key === '/')) {
+        e.preventDefault();
+        handleTriggerSearch();
+        return;
+      }
+
+      // 2. Escape: Close topmost modal or clear search/filter
+      if (e.key === 'Escape') {
+        if (selectedObject) {
+          e.preventDefault();
+          setSelectedObject(null);
+          return;
+        }
+        if (isAddModalOpen) {
+          e.preventDefault();
+          setIsAddModalOpen(false);
+          setEditingObject(null);
+          return;
+        }
+        if (isAdminAuthModalOpen) {
+          e.preventDefault();
+          setIsAdminAuthModalOpen(false);
+          return;
+        }
+        if (searchQuery) {
+          e.preventDefault();
+          setSearchQuery('');
+          window.dispatchEvent(new CustomEvent('workbench:clear-search'));
+          return;
+        }
+        if (selectedCategory !== 'all') {
+          e.preventDefault();
+          setSelectedCategory('all');
+          return;
+        }
+        if (editMode) {
+          e.preventDefault();
+          setEditMode(false);
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    selectedObject,
+    isAddModalOpen,
+    isAdminAuthModalOpen,
+    searchQuery,
+    selectedCategory,
+    editMode,
+    currentView,
+  ]);
 
   // Reset to seed data
   const handleResetLayout = () => {
@@ -339,16 +533,13 @@ export default function App() {
 
   const isOwner = identity.role === 'owner';
 
-  if (currentView === 'design-system') {
-    return <DesignSystemPage onBackToWorkbench={() => setCurrentView('workbench')} />;
-  }
-
   return (
     <div className="min-h-screen flex flex-col workbench-bg selection:bg-[#FFD84D] selection:text-[#171717]">
-      {/* 1. Header: Product title, Owner toggle, Edit trigger */}
+      {/* 1. Header: Persistent across both views, zero jumping */}
       <V4Header
         identity={identity}
-        onToggleIdentity={handleToggleIdentity}
+        onLogin={handleOpenLogin}
+        onLogout={handleLogout}
         editMode={editMode}
         onToggleEditMode={handleToggleEditMode}
         onOpenAddForm={() => {
@@ -357,88 +548,141 @@ export default function App() {
         }}
         totalCount={objects.length}
         activeView={currentView}
-        onSelectView={(v) => setCurrentView(v)}
+        onSelectView={(v) => {
+          if (v === 'workbench') {
+            navigateToWorkbench();
+          } else {
+            navigateToDesignSystem();
+          }
+        }}
       />
 
-      {/* Owner Edit Toolbar (Strictly omitted from DOM if guest or !editMode) */}
-      {isOwner && editMode && (
-        <V4EditToolbar
-          onSave={handleSaveLayout}
-          onOpenAdd={() => {
-            setEditingObject(null);
-            setIsAddModalOpen(true);
-          }}
-          onReset={handleResetLayout}
-          isSaving={isSaving}
-          saveSuccess={saveSuccess}
-        />
+      {/* View routing: Workbench vs Design System vs Resource Detail */}
+      {currentView === 'design-system' ? (
+        <main className="flex-1">
+          <DesignSystemPage onBackToWorkbench={navigateToWorkbench} />
+        </main>
+      ) : currentView === 'resource-detail' ? (
+        <main className="flex-1">
+          {objects.find((o) => o.id === currentResourceId) ? (
+            <ResourceDetailPage
+              object={objects.find((o) => o.id === currentResourceId)!}
+              identity={identity}
+              onBackToHome={navigateToWorkbench}
+              onSaveObject={handleSaveObject}
+              onDeleteObject={(id) => {
+                handleDeleteObject(id);
+                navigateToWorkbench();
+              }}
+            />
+          ) : (
+            <div className="w-full md:w-[85%] mx-auto px-6 py-16 text-center">
+              <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717] space-y-4">
+                <div className="w-12 h-12 bg-[#FFB4C6] border-2 border-[#171717] rounded-xl mx-auto flex items-center justify-center font-bold text-xl">
+                  !
+                </div>
+                <h2 className="text-xl font-bold text-[#171717]">未找到该资源档案</h2>
+                <p className="text-xs font-mono text-[#5F5E5A]">
+                  资源档案可能已被移除或 ID 路径不存在。
+                </p>
+                <button
+                  type="button"
+                  onClick={navigateToWorkbench}
+                  className="px-4 py-2 bg-[#FFD84D] hover:bg-[#FACC15] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[2px_2px_0_#171717] cursor-pointer"
+                >
+                  返回工作台首页
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
+      ) : (
+        <>
+          {/* Owner Edit Toolbar (Strictly omitted from DOM if guest or !editMode) */}
+          {isOwner && editMode && (
+            <V4EditToolbar
+              onSave={handleSaveLayout}
+              onOpenAdd={() => {
+                setEditingObject(null);
+                setIsAddModalOpen(true);
+              }}
+              onReset={handleResetLayout}
+              isSaving={isSaving}
+              saveSuccess={saveSuccess}
+            />
+          )}
+
+          {/* 2. Search & 6-Category Filters */}
+          <V4SearchToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            categoryCounts={categoryCounts}
+            disabled={isOwner && editMode}
+          />
+
+          {/* 3. Tag Panel (Popular tags & expandable full cloud) */}
+          <TagPanel
+            tags={allTagsWithCount}
+            selectedTag={selectedTag}
+            onSelectTag={setSelectedTag}
+            topLimit={8}
+          />
+
+          {/* 4. Pinned Quick Picks Section (Only on clean home page) */}
+          {!searchQuery && selectedCategory === 'all' && !selectedTag && (
+            <V4PinnedSection
+              pinnedObjects={pinnedObjects}
+              onSelect={(obj) => setSelectedObject(obj)}
+            />
+          )}
+
+          {/* Section Title Bar */}
+          <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-4 pb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-4 bg-[#171717] rounded-xs" />
+              <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase">
+                {searchQuery
+                  ? `检索结果 (${filteredObjects.length})`
+                  : selectedTag
+                  ? `标签 #${selectedTag} (${filteredObjects.length})`
+                  : selectedCategory !== 'all'
+                  ? `分类筛选 (${filteredObjects.length})`
+                  : `全部工作台入口资产 (${filteredObjects.length})`}
+              </h2>
+            </div>
+            <span className="text-xs font-mono text-[#5F5E5A]">
+              6 列 Neo-Brutalism 网格
+            </span>
+          </div>
+
+          {/* 5. Main Resource Grid Canvas (with data-testid="home-grid") */}
+          <main className="flex-1">
+            <HomeGrid
+              objects={filteredObjects}
+              editMode={isOwner && editMode}
+              isOwner={isOwner}
+              onSelectObject={(obj) => setSelectedObject(obj)}
+              onTogglePin={handleTogglePin}
+              onDeleteObject={handleDeleteObject}
+              onReorder={handleReorder}
+              onEditObject={handleOpenEdit}
+              onChangeSize={handleChangeSize}
+            />
+          </main>
+        </>
       )}
-
-      {/* 2. Search & 6-Category Filters */}
-      <V4SearchToolbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        categoryCounts={categoryCounts}
-        disabled={isOwner && editMode}
-      />
-
-      {/* 3. Tag Panel (Popular tags & expandable full cloud) */}
-      <TagPanel
-        tags={allTagsWithCount}
-        selectedTag={selectedTag}
-        onSelectTag={setSelectedTag}
-        topLimit={8}
-      />
-
-      {/* 4. Pinned Quick Picks Section (Only on clean home page) */}
-      {!searchQuery && selectedCategory === 'all' && !selectedTag && (
-        <V4PinnedSection
-          pinnedObjects={pinnedObjects}
-          onSelect={(obj) => setSelectedObject(obj)}
-        />
-      )}
-
-      {/* Section Title Bar */}
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 pt-4 pb-1 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-4 bg-[#171717] rounded-xs" />
-          <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase">
-            {searchQuery
-              ? `检索结果 (${filteredObjects.length})`
-              : selectedTag
-              ? `标签 #${selectedTag} (${filteredObjects.length})`
-              : selectedCategory !== 'all'
-              ? `分类筛选 (${filteredObjects.length})`
-              : `全部工作台入口资产 (${filteredObjects.length})`}
-          </h2>
-        </div>
-        <span className="text-xs font-mono text-[#5F5E5A]">
-          6 列 Neo-Brutalism 网格
-        </span>
-      </div>
-
-      {/* 5. Main Resource Grid Canvas (with data-testid="home-grid") */}
-      <main className="flex-1">
-        <HomeGrid
-          objects={filteredObjects}
-          editMode={isOwner && editMode}
-          isOwner={isOwner}
-          onSelectObject={(obj) => setSelectedObject(obj)}
-          onTogglePin={handleTogglePin}
-          onDeleteObject={handleDeleteObject}
-          onReorder={handleReorder}
-          onEditObject={handleOpenEdit}
-          onChangeSize={handleChangeSize}
-        />
-      </main>
 
       {/* 6. Detail Modal Overlay */}
       <DetailModal
         object={selectedObject}
+        isOwner={isOwner}
         onClose={() => setSelectedObject(null)}
+        onViewFullDetail={navigateToResource}
         onEdit={isOwner ? handleOpenEdit : undefined}
+        onDelete={isOwner ? handleDeleteObject : undefined}
+        onTogglePin={isOwner ? handleTogglePin : undefined}
       />
 
       {/* 7. Add / Edit Resource Modal (Strictly omitted from DOM if Guest) */}
@@ -454,7 +698,14 @@ export default function App() {
         />
       )}
 
-      {/* 8. Global Status Footer */}
+      {/* 8. Admin Password Authentication Modal */}
+      <AdminAuthModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        onSuccess={handleAdminAuthSuccess}
+      />
+
+      {/* 9. Global Status Footer */}
       <V4Footer />
     </div>
   );

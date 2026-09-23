@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { WorkbenchObject } from '../../types';
+import { WorkbenchObject, TYPE_VISUAL_MAP } from '../../types';
 import { Resource, ResourceSize } from '../../types/resource';
 import { toResource, toDatabaseCardSize, executeEntry } from '../../adapters/resourceAdapter';
 import { V4Badge } from '../v4/V4Badge';
@@ -124,7 +124,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               className="inline-flex items-center text-[#171717] bg-[#FFD84D] border border-[#171717] rounded px-1.5 py-0.5 text-[10px] font-bold font-mono shadow-[1px_1px_0_#171717]"
             >
               <Pin className="w-2.5 h-2.5 fill-current rotate-45 mr-0.5" />
-              PIN
+              置顶
             </span>
           )}
         </div>
@@ -143,11 +143,28 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             {onChangeSize && (
               <button
                 type="button"
-                onClick={handleCycleSize}
-                className="px-1 py-0.5 text-[10px] font-mono font-bold hover:bg-[#FFD84D] rounded text-[#171717] uppercase"
-                title={`当前尺寸: ${res.size} (点击切换)`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCycleSize(e);
+                }}
+                className="px-1.5 py-0.5 text-[10px] font-mono font-bold hover:bg-[#FFD84D] rounded text-[#171717]"
+                title={`当前尺寸: ${
+                  res.size === 'small'
+                    ? '紧凑 (2列)'
+                    : res.size === 'medium'
+                    ? '标准 (4列)'
+                    : res.size === 'large'
+                    ? '双高 (4列)'
+                    : '通栏 (6列)'
+                } (点击切换)`}
               >
-                {res.size.charAt(0).toUpperCase()}
+                {res.size === 'small'
+                  ? '紧凑'
+                  : res.size === 'medium'
+                  ? '标准'
+                  : res.size === 'large'
+                  ? '双高'
+                  : '通栏'}
               </button>
             )}
 
@@ -156,7 +173,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               <button
                 type="button"
                 data-testid="pin-button"
-                onClick={() => onTogglePin(res.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePin(res.id);
+                }}
                 className="p-1 hover:bg-[#FFD84D] rounded text-[#171717]"
                 title={res.pinned ? '取消置顶' : '置顶'}
               >
@@ -168,7 +188,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             {onEdit && (
               <button
                 type="button"
-                onClick={() => onEdit(res)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(res);
+                }}
                 className="p-1 hover:bg-[#FFD84D] rounded text-[#171717]"
                 title="编辑详情"
               >
@@ -181,7 +204,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               <button
                 type="button"
                 data-testid="delete-button"
-                onClick={() => onDelete(res.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(res.id);
+                }}
                 className="p-1 hover:bg-[#FFB4C6] rounded text-[#171717]"
                 title="删除卡片"
               >
@@ -214,31 +240,33 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           {res.title}
         </h3>
 
-        {/* Primary Entry Target Chip with one-click action */}
-        <div
-          onClick={handleOpenAction}
-          className="inline-flex items-center gap-1.5 max-w-full text-xs font-mono font-medium px-2 py-0.5 bg-[#FBF7EF] border border-[#EDE8DC] group-hover:border-[#171717] rounded text-[#5F5E5A] group-hover:text-[#171717] mb-2 truncate transition-colors shadow-[1px_1px_0_rgba(0,0,0,0.05)]"
-          title={res.primaryEntry.protocol === 'localPath' ? '点击复制本地路径' : '点击打开入口'}
-        >
-          {renderProtocolIcon()}
-          <span className="truncate">{res.primaryEntry.target || '未配置入口'}</span>
-          {feedback ? (
-            <span className="text-[10px] font-bold text-[#171717] bg-[#A9E5C3] px-1 rounded flex items-center gap-0.5">
-              <Check className="w-2.5 h-2.5" /> {feedback}
-            </span>
-          ) : res.primaryEntry.protocol === 'localPath' ? (
-            <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
-          ) : (
-            <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
-          )}
-        </div>
+        {/* Primary Entry Target Chip with one-click action (hidden on small to keep card uncluttered) */}
+        {!isSmall && (
+          <div
+            onClick={handleOpenAction}
+            className="inline-flex items-center gap-1.5 max-w-full text-xs font-mono font-medium px-2 py-0.5 bg-[#FBF7EF] border border-[#EDE8DC] group-hover:border-[#171717] rounded text-[#5F5E5A] group-hover:text-[#171717] mb-2 truncate transition-colors shadow-[1px_1px_0_rgba(0,0,0,0.05)] cursor-pointer"
+            title={res.primaryEntry.protocol === 'localPath' ? '点击复制本地路径' : '点击直接打开主入口'}
+          >
+            {renderProtocolIcon()}
+            <span className="truncate">{res.primaryEntry.target || '未配置入口'}</span>
+            {feedback ? (
+              <span className="text-[10px] font-bold text-[#171717] bg-[#A9E5C3] px-1 rounded flex items-center gap-0.5">
+                <Check className="w-2.5 h-2.5" /> {feedback}
+              </span>
+            ) : res.primaryEntry.protocol === 'localPath' ? (
+              <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
+            ) : (
+              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
+            )}
+          </div>
+        )}
 
-        {/* Summary: strict lines per size to prevent grid overflow */}
+        {/* Summary: hidden on small; single line on medium; multi-line on large */}
         {!isSmall && res.summary && (
           <p
-            className={`text-xs text-[#5F5E5A] leading-relaxed line-clamp-${
-              isLarge ? '3' : '1'
-            } mb-2`}
+            className={`text-xs text-[#5F5E5A] leading-relaxed mb-2 ${
+              isLarge ? 'line-clamp-3' : 'line-clamp-1'
+            }`}
           >
             {res.summary}
           </p>
@@ -247,29 +275,58 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 
       {/* Bottom Action & Tags Bar */}
       <div className="pt-2 border-t border-[#EDE8DC] flex items-center justify-between gap-2 text-xs text-[#888780] font-mono mt-auto">
-        {/* Left: Tags or type label */}
-        <div className="flex items-center gap-1.5 flex-wrap overflow-hidden">
-          {res.tags && res.tags.length > 0 ? (
-            res.tags.slice(0, isLarge ? 4 : isMedium || isBanner ? 2 : 1).map((tag) => (
-              <span
-                key={tag}
-                className="px-1.5 py-0.5 bg-[#EDE8DC] text-[#171717] border border-[#171717] rounded text-[10px] font-semibold whitespace-nowrap"
-              >
-                #{tag}
+        {/* Left: Tags and auxiliary info (strictly hidden on small, expanded on large) */}
+        <div className="flex items-center gap-1.5 flex-wrap overflow-hidden min-w-0">
+          {isSmall ? (
+            <span className="text-[10px] text-[#888780] font-mono truncate">
+              {res.primaryEntry.protocol === 'localPath' ? '本地路径' : res.primaryEntry.protocol === 'github' ? 'GitHub' : 'Web URL'}
+            </span>
+          ) : isLarge ? (
+            <>
+              {res.tags && res.tags.length > 0 ? (
+                res.tags.slice(0, 4).map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-1.5 py-0.5 bg-[#EDE8DC] text-[#171717] border border-[#171717] rounded text-[10px] font-semibold whitespace-nowrap"
+                  >
+                    #{tag}
+                  </span>
+                ))
+              ) : (
+                <span className="text-[11px] text-[#5F5E5A]">
+                  {TYPE_VISUAL_MAP[res.type]?.label || '其他'}
+                </span>
+              )}
+              <span className="text-[10px] text-[#888780] hidden sm:inline-block">
+                · {res.primaryEntry.protocol === 'localPath' ? '本地' : '远程'}
               </span>
-            ))
+            </>
           ) : (
-            <span className="text-[11px] text-[#5F5E5A] uppercase">{res.type}</span>
+            // Medium and banner: 1-2 tags or type label
+            res.tags && res.tags.length > 0 ? (
+              res.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag}
+                  className="px-1.5 py-0.5 bg-[#EDE8DC] text-[#171717] border border-[#171717] rounded text-[10px] font-semibold whitespace-nowrap"
+                >
+                  #{tag}
+                </span>
+              ))
+            ) : (
+              <span className="text-[11px] text-[#5F5E5A]">
+                {TYPE_VISUAL_MAP[res.type]?.label || '其他'}
+              </span>
+            )
           )}
         </div>
 
-        {/* Right: High Priority Open Button */}
+        {/* Right: High Priority Open Button (always present and directly opens without opening modal) */}
         <div className="flex items-center gap-1 shrink-0 ml-auto">
           <button
             type="button"
             onClick={handleOpenAction}
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[#171717] bg-[#FFFFFF] hover:bg-[#FFD84D] border border-[#171717] rounded shadow-[1px_1px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 transition-all whitespace-nowrap"
-            title={res.primaryEntry.protocol === 'localPath' ? '复制本地路径' : '打开此入口'}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold font-mono text-[#171717] bg-[#FFFFFF] hover:bg-[#FFD84D] border border-[#171717] rounded shadow-[1px_1px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 transition-all whitespace-nowrap cursor-pointer"
+            title={res.primaryEntry.protocol === 'localPath' ? '复制本地路径' : '直接打开入口 (不触发详情)'}
           >
             <span>{res.primaryEntry.protocol === 'localPath' ? '复制' : '打开'}</span>
             {res.primaryEntry.protocol === 'localPath' ? (

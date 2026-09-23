@@ -1,15 +1,14 @@
 import React from 'react';
-import { Terminal, Shield, GitBranch, Cpu, ArrowUpRight } from 'lucide-react';
+import { Shield, GitBranch, Cpu } from 'lucide-react';
+import { WorkbenchLogo } from './WorkbenchLogo';
 
 export const V4Footer: React.FC = () => {
   return (
-    <footer className="w-full border-t-2 border-[#171717] bg-[#FFFFFF] mt-16 py-8 px-4 sm:px-8">
-      <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-[#5F5E5A]">
+    <footer className="w-full border-t-2 border-[#171717] bg-[#FFFFFF] mt-16 py-6 px-4 sm:px-8">
+      <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-[#5F5E5A]">
         {/* Left: Branding & philosophy */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-6 h-6 rounded bg-[#171717] text-[#FFFFFF] flex items-center justify-center font-bold text-xs shrink-0">
-            PW
-          </div>
+          <WorkbenchLogo className="w-6 h-6" />
           <div className="whitespace-nowrap">
             <span className="font-bold text-[#171717]">Personal Workbench</span>
             <span className="mx-2 text-[#888780]">·</span>
@@ -30,19 +29,27 @@ export const V4Footer: React.FC = () => {
           </span>
         </div>
 
-        {/* Right: Quick shortcuts (prevent text wrapping) */}
-        <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#EDE8DC] border border-[#171717] rounded text-xs font-mono font-medium whitespace-nowrap select-none shadow-[1px_1px_0_#171717]">
-            <kbd className="font-bold font-mono">⌘K</kbd>
+        {/* Right: Quick shortcuts tips (Pure static text hints, completely without button styling) */}
+        <div className="flex items-center gap-3 shrink-0 whitespace-nowrap text-xs font-mono text-[#5F5E5A]">
+          <span className="inline-flex items-center gap-1.5 select-none" title="快捷键提示：⌘K / Ctrl+K 搜索">
+            <kbd className="font-bold font-mono bg-[#EDE8DC] text-[#171717] px-1.5 py-0.5 rounded text-[11px] leading-none">
+              ⌘K
+            </kbd>
             <span>搜索</span>
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#EDE8DC] border border-[#171717] rounded text-xs font-mono font-medium whitespace-nowrap select-none shadow-[1px_1px_0_#171717]">
-            <kbd className="font-bold font-mono">ESC</kbd>
-            <span>清空</span>
+          <span className="text-[#888780]">·</span>
+          <span className="inline-flex items-center gap-1.5 select-none" title="快捷键提示：ESC 关闭弹窗或清空">
+            <kbd className="font-bold font-mono bg-[#EDE8DC] text-[#171717] px-1.5 py-0.5 rounded text-[11px] leading-none">
+              ESC
+            </kbd>
+            <span>关闭 / 清空</span>
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#EDE8DC] border border-[#171717] rounded text-xs font-mono font-medium whitespace-nowrap select-none shadow-[1px_1px_0_#171717]">
-            <kbd className="font-bold font-mono">Tab</kbd>
-            <span>导航</span>
+          <span className="text-[#888780]">·</span>
+          <span className="inline-flex items-center gap-1.5 select-none" title="快捷键提示：Tab 切换分类">
+            <kbd className="font-bold font-mono bg-[#EDE8DC] text-[#171717] px-1.5 py-0.5 rounded text-[11px] leading-none">
+              Tab
+            </kbd>
+            <span>切换分类</span>
           </span>
         </div>
       </div>

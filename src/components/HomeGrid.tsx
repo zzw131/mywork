@@ -70,7 +70,7 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
       <div
         data-testid="home-grid"
         data-edit-mode={editMode}
-        className="react-grid-layout w-full max-w-[1200px] mx-auto px-4 sm:px-8 py-16 text-center"
+        className="react-grid-layout w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-16 text-center"
       >
         <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[4px_4px_0_#171717]">
           <div className="w-12 h-12 mx-auto mb-3 bg-[#EDE8DC] border border-[#171717] rounded-xl flex items-center justify-center font-mono text-xl">
@@ -86,7 +86,7 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
   }
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 py-6">
+    <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-6">
       {/* Grid container with exact testid and layout persistence */}
       <div
         data-testid="home-grid"
