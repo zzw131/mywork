@@ -26,9 +26,13 @@ import { WorkbenchObject, TYPE_VISUAL_MAP, ObjectType } from '../types';
 
 interface DesignSystemPageProps {
   onBackToWorkbench?: () => void;
+  searchQuery?: string;
 }
 
-export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({ onBackToWorkbench }) => {
+export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
+  onBackToWorkbench,
+  searchQuery = '',
+}) => {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string>('react');
   const [inputValue, setInputValue] = useState<string>('搜索数字资产...');
@@ -146,48 +150,33 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({ onBackToWork
 
   return (
     <div className="w-full min-h-screen bg-[#FBF7EF] text-[#171717] pb-16">
-      {/* Sub Header / Page Title Bar - Clear Neo-Brutalist separation */}
-      <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-6 pb-4 mb-2 border-b-2 border-[#171717] flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-lg font-bold text-[#171717] tracking-tight">Neo-Brutalism v4 规范库</h2>
-          <span className="px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFD84D] border border-[#171717] rounded shadow-[1px_1px_0_#171717]">
-            权威标准
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-mono font-semibold text-[#5F5E5A]">
-          <span className="w-2 h-2 rounded-full bg-[#10B981] border border-[#171717]" />
-          <span>8 类核心组件 · 14 组 Tokens</span>
-        </div>
-      </div>
-
       {/* Main Content Area - 80% Width consistent with Workbench */}
-      <main className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-6 space-y-12">
+      <main className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-5 pb-8 space-y-10">
         {/* Intro Banner */}
         <section className="bg-[#FFFFFF] border-2 border-[#171717] rounded-xl p-6 shadow-[6px_6px_0_#171717]">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <WorkbenchLogo className="w-8 h-8" />
-                <h2 className="text-xl font-bold tracking-tight">
-                  Personal Workbench · 视觉规范总览
-                </h2>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <WorkbenchLogo className="w-8 h-8" />
+                  <h2 className="text-xl font-bold tracking-tight">
+                    Personal Workbench · 视觉规范总览
+                  </h2>
+                </div>
+                <p className="text-sm text-[#5F5E5A] max-w-2xl leading-relaxed">
+                  遵循「粗描边、硬阴影、清晰层级、零渐变、零玻璃拟态、高可读性」的 Neo-Brutalism
+                  v4 体系。拒绝无意义的装饰与冗余卡片，专为极客与高生产力数字工作者打造。
+                </p>
               </div>
-              <p className="text-sm text-[#5F5E5A] max-w-2xl leading-relaxed">
-                遵循「粗描边、硬阴影、清晰层级、零渐变、零玻璃拟态、高可读性」的 Neo-Brutalism
-                v4 体系。拒绝无意义的装饰与冗余卡片，专为极客与高生产力数字工作者打造。
-              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="px-3 py-1.5 bg-[#FBF7EF] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold">
+                  GRID: 6 列响应式系统
+                </div>
+                <div className="px-3 py-1.5 bg-[#FFD84D] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[2px_2px_0_#171717]">
+                  BORDER: 2px 硬笔刷
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="px-3 py-1.5 bg-[#FBF7EF] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold">
-                GRID: 6 列响应式系统
-              </div>
-              <div className="px-3 py-1.5 bg-[#FFD84D] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[2px_2px_0_#171717]">
-                BORDER: 2px 硬笔刷
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
 
         {/* 1. Design Tokens: Colors */}
         <section className="space-y-4">

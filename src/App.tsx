@@ -10,7 +10,14 @@ import { toDatabaseCardSize } from './adapters/resourceAdapter';
 import { SEED_OBJECTS } from './data/seedData';
 import { V4Header } from './components/v4/V4Header';
 import { V4SearchToolbar } from './components/v4/V4SearchToolbar';
+import { V4CategoryFilter } from './components/v4/V4CategoryFilter';
 import { TagPanel } from './components/layout/TagPanel';
+import {
+  addCustomTag,
+  renameTagAcrossStorage,
+  deleteTagAcrossStorage,
+  getCustomTags,
+} from './utils/tagManager';
 import { V4PinnedSection } from './components/v4/V4PinnedSection';
 import { V4EditToolbar } from './components/v4/V4EditToolbar';
 import { HomeGrid } from './components/HomeGrid';
@@ -20,8 +27,9 @@ import { V4Footer } from './components/v4/V4Footer';
 import { DesignSystemPage } from './components/DesignSystemPage';
 import { AdminAuthModal } from './components/v4/AdminAuthModal';
 import { ResourceDetailPage } from './components/v4/ResourceDetailPage';
+import { GoalsPage } from './modules/goals';
 
-export type AppView = 'workbench' | 'design-system' | 'resource-detail';
+export type AppView = 'workbench' | 'goals' | 'design-system' | 'resource-detail';
 
 function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
   if (typeof window === 'undefined') return { view: 'workbench', resourceId: null };
@@ -41,7 +49,12 @@ function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
     return { view: 'resource-detail', resourceId: decodeURIComponent(hashMatch[1]) };
   }
 
-  // 3. Design system
+  // 3. Goals management
+  if (path.includes('goals') || hash.includes('goals')) {
+    return { view: 'goals', resourceId: null };
+  }
+
+  // 4. Design system
   if (path.includes('design-system') || hash.includes('design-system')) {
     return { view: 'design-system', resourceId: null };
   }
@@ -75,6 +88,15 @@ export default function App() {
       window.history.pushState({ view: 'workbench' }, '', '/');
     } catch {
       window.location.hash = '#';
+    }
+  };
+
+  const navigateToGoals = () => {
+    setCurrentRoute({ view: 'goals', resourceId: null });
+    try {
+      window.history.pushState({ view: 'goals' }, '', '/goals');
+    } catch {
+      window.location.hash = '#goals';
     }
   };
 
@@ -139,8 +161,29 @@ export default function App() {
 
   // Search & filter state (4-dimensional: Title, Tags, Summary, Entry path)
   const [searchQuery, setSearchQuery] = useState('');
+  const [goalsSearchQuery, setGoalsSearchQuery] = useState('');
+  const [dsSearchQuery, setDsSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FilterCategory>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [customTags, setCustomTags] = useState<string[]>(() => getCustomTags());
+
+  // Listen to tag changes across the app
+  useEffect(() => {
+    const handleTagsUpdated = () => {
+      setCustomTags(getCustomTags());
+      try {
+        const raw = localStorage.getItem('personal_workbench_objects');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setObjects(parsed);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('workbench:tags-updated', handleTagsUpdated);
+    return () => window.removeEventListener('workbench:tags-updated', handleTagsUpdated);
+  }, []);
 
   // Detail overlay state
   const [selectedObject, setSelectedObject] = useState<WorkbenchObject | null>(null);
@@ -432,9 +475,13 @@ export default function App() {
     }
   };
 
-  // All extracted tags with frequency counts
+  // All extracted tags with frequency counts (including custom tags)
   const allTagsWithCount = useMemo(() => {
     const map = new Map<string, number>();
+    customTags.forEach((t) => {
+      const clean = t.trim();
+      if (clean) map.set(clean, 0);
+    });
     objects.forEach((obj) => {
       (obj.tags || []).forEach((t) => {
         const clean = t.trim();
@@ -445,8 +492,60 @@ export default function App() {
     });
     return Array.from(map.entries())
       .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [objects]);
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [objects, customTags]);
+
+  // Tag CRUD Handlers
+  const handleCreateTag = (newTag: string) => {
+    addCustomTag(newTag);
+    setCustomTags(getCustomTags());
+  };
+
+  const handleRenameTag = (oldTag: string, newTag: string) => {
+    renameTagAcrossStorage(oldTag, newTag);
+    setCustomTags(getCustomTags());
+    setObjects((prev) => {
+      const next = prev.map((obj) =>
+        obj.tags?.includes(oldTag)
+          ? {
+              ...obj,
+              tags: Array.from(
+                new Set(obj.tags.map((t) => (t === oldTag ? newTag : t)))
+              ),
+            }
+          : obj
+      );
+      try {
+        localStorage.setItem('personal_workbench_objects', JSON.stringify(next));
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+    if (selectedTag === oldTag) {
+      setSelectedTag(newTag);
+    }
+  };
+
+  const handleDeleteTag = (tagToDelete: string) => {
+    deleteTagAcrossStorage(tagToDelete);
+    setCustomTags(getCustomTags());
+    setObjects((prev) => {
+      const next = prev.map((obj) => ({
+        ...obj,
+        tags: (obj.tags || []).filter((t) => t !== tagToDelete),
+      }));
+      try {
+        localStorage.setItem('personal_workbench_objects', JSON.stringify(next));
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+    if (selectedTag === tagToDelete) {
+      setSelectedTag(null);
+    }
+  };
 
   // Calculate 6 standard category counts
   const categoryCounts = useMemo(() => {
@@ -551,16 +650,80 @@ export default function App() {
         onSelectView={(v) => {
           if (v === 'workbench') {
             navigateToWorkbench();
+          } else if (v === 'goals') {
+            navigateToGoals();
           } else {
             navigateToDesignSystem();
           }
         }}
       />
 
-      {/* View routing: Workbench vs Design System vs Resource Detail */}
+      {/* Owner Edit Toolbar for Workbench (Only in workbench view and editMode) */}
+      {isOwner && editMode && currentView === 'workbench' && (
+        <V4EditToolbar
+          onSave={handleSaveLayout}
+          onOpenAdd={() => {
+            setEditingObject(null);
+            setIsAddModalOpen(true);
+          }}
+          onReset={handleResetLayout}
+          isSaving={isSaving}
+          saveSuccess={saveSuccess}
+        />
+      )}
+
+      {/* Global Unified Search Toolbar: Persistent across all pages, searching the current page */}
+      <V4SearchToolbar
+        searchQuery={
+          currentView === 'workbench'
+            ? searchQuery
+            : currentView === 'goals'
+            ? goalsSearchQuery
+            : currentView === 'design-system'
+            ? dsSearchQuery
+            : searchQuery
+        }
+        onSearchChange={(q) => {
+          if (currentView === 'workbench') {
+            setSearchQuery(q);
+          } else if (currentView === 'goals') {
+            setGoalsSearchQuery(q);
+          } else if (currentView === 'design-system') {
+            setDsSearchQuery(q);
+          } else {
+            setSearchQuery(q);
+          }
+        }}
+        selectedCategory={currentView === 'workbench' ? selectedCategory : undefined}
+        placeholder={
+          currentView === 'goals'
+            ? '搜索目标标题、简介、具体链接、复盘笔记...'
+            : currentView === 'design-system'
+            ? '搜索设计规范 Tokens、色彩、组件与阴影规范...'
+            : '快速检索工作台标题、标签、摘要或入口路径（URL、本地路径、GitHub）...'
+        }
+        disabled={isOwner && editMode && currentView === 'workbench'}
+      />
+
+      {/* View routing: Workbench vs Goals vs Design System vs Resource Detail */}
       {currentView === 'design-system' ? (
         <main className="flex-1">
-          <DesignSystemPage onBackToWorkbench={navigateToWorkbench} />
+          <DesignSystemPage
+            onBackToWorkbench={navigateToWorkbench}
+            searchQuery={dsSearchQuery}
+          />
+        </main>
+      ) : currentView === 'goals' ? (
+        <main className="flex-1">
+          <GoalsPage
+            identity={identity}
+            editMode={editMode}
+            workbenchResources={objects}
+            onBackToWorkbench={navigateToWorkbench}
+            onNavigateToResource={navigateToResource}
+            searchQuery={goalsSearchQuery}
+            onSearchChange={setGoalsSearchQuery}
+          />
         </main>
       ) : currentView === 'resource-detail' ? (
         <main className="flex-1">
@@ -598,36 +761,27 @@ export default function App() {
         </main>
       ) : (
         <>
-          {/* Owner Edit Toolbar (Strictly omitted from DOM if guest or !editMode) */}
-          {isOwner && editMode && (
-            <V4EditToolbar
-              onSave={handleSaveLayout}
-              onOpenAdd={() => {
-                setEditingObject(null);
-                setIsAddModalOpen(true);
-              }}
-              onReset={handleResetLayout}
-              isSaving={isSaving}
-              saveSuccess={saveSuccess}
+          {/* 3. Workbench Category Filters (Placed directly above Tag Panel) */}
+          <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-5 pb-1">
+            <V4CategoryFilter
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              categoryCounts={categoryCounts}
+              disabled={isOwner && editMode}
             />
-          )}
+          </div>
 
-          {/* 2. Search & 6-Category Filters */}
-          <V4SearchToolbar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            categoryCounts={categoryCounts}
-            disabled={isOwner && editMode}
-          />
-
-          {/* 3. Tag Panel (Popular tags & expandable full cloud) */}
+          {/* 4. Tag Panel (Popular tags & expandable full cloud with CRUD in editMode) */}
           <TagPanel
             tags={allTagsWithCount}
             selectedTag={selectedTag}
             onSelectTag={setSelectedTag}
             topLimit={8}
+            editMode={editMode}
+            isOwner={isOwner}
+            onCreateTag={handleCreateTag}
+            onRenameTag={handleRenameTag}
+            onDeleteTag={handleDeleteTag}
           />
 
           {/* 4. Pinned Quick Picks Section (Only on clean home page) */}

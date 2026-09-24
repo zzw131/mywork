@@ -3,6 +3,7 @@ import { WorkbenchObject, ObjectType } from '../../types';
 import { ResourceSize } from '../../types/resource';
 import { detectProtocol, toResourceSize, toDatabaseCardSize } from '../../adapters/resourceAdapter';
 import { ResourceCard } from './ResourceCard';
+import { getCustomTags } from '../../utils/tagManager';
 import {
   X,
   Plus,
@@ -401,6 +402,51 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                   placeholder="主力, Next.js, 工具, 文档..."
                   className="w-full px-3 py-2 text-xs font-mono bg-[#FFFFFF] border-2 border-[#171717] rounded-lg shadow-[2px_2px_0_#171717] focus:outline-none focus:ring-2 focus:ring-[#FFD84D]"
                 />
+                {/* Quick-Pick Tags */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[10px] font-mono text-[#888780] mr-1">快捷备选:</span>
+                  {Array.from(
+                    new Set([
+                      ...getCustomTags(),
+                      '主力',
+                      'React',
+                      'TypeScript',
+                      '工具',
+                      '全栈',
+                      '开源',
+                      '设计',
+                      'Node.js',
+                    ])
+                  )
+                    .slice(0, 8)
+                    .map((t) => {
+                      const currentTags = tagsInput
+                        .split(/[,，]/)
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      const isSelected = currentTags.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => {
+                            const next = isSelected
+                              ? currentTags.filter((x) => x !== t)
+                              : [...currentTags, t];
+                            setTagsInput(next.join(', '));
+                          }}
+                          className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-mono border border-[#171717] cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-[#FFD84D] text-[#171717] font-bold shadow-[1px_1px_0_#171717]'
+                              : 'bg-[#FFFFFF] text-[#5F5E5A] hover:bg-[#FBF7EF]'
+                          }`}
+                        >
+                          <span>#{t}</span>
+                          {isSelected && <X className="w-2.5 h-2.5 ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                </div>
               </div>
 
               {/* Pinned Quick Picks Toggle */}

@@ -39,6 +39,11 @@
   --v4-content-max: 1200px;
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   padding: 0;

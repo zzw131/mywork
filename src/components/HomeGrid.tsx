@@ -4,6 +4,7 @@ import { ResourceSize } from '../types/resource';
 import { V4ResourceCard } from './v4/V4ResourceCard';
 
 export interface HomeGridProps {
+  title?: React.ReactNode;
   objects: WorkbenchObject[];
   editMode: boolean;
   isOwner: boolean;
@@ -16,6 +17,7 @@ export interface HomeGridProps {
 }
 
 export const HomeGrid: React.FC<HomeGridProps> = ({
+  title,
   objects,
   editMode,
   isOwner,
@@ -67,64 +69,92 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
 
   if (objects.length === 0) {
     return (
-      <div
-        data-testid="home-grid"
-        data-edit-mode={editMode}
-        className="react-grid-layout w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-16 text-center"
-      >
-        <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[4px_4px_0_#171717]">
-          <div className="w-12 h-12 mx-auto mb-3 bg-[#EDE8DC] border border-[#171717] rounded-xl flex items-center justify-center font-mono text-xl">
-            ∅
+      <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-5 pb-8">
+        <div className="relative border-2 border-[#171717] rounded-2xl bg-[#FFFFFF] shadow-[4px_4px_0_#171717] pt-8 pb-10 px-4 sm:px-6 text-center">
+          {title && (
+            <div className="absolute -top-3.5 left-4 sm:left-6 flex items-center gap-2 px-3 py-1 bg-[#FFD84D] border-2 border-[#171717] rounded-lg shadow-[2px_2px_0_#171717] z-10 select-none">
+              <span className="w-2 h-2 rounded-full bg-[#171717]" />
+              <div className="text-xs sm:text-sm font-bold text-[#171717] tracking-tight uppercase font-mono">
+                {title}
+              </div>
+            </div>
+          )}
+
+          <div
+            data-testid="home-grid"
+            data-edit-mode={editMode}
+            className="react-grid-layout max-w-md mx-auto p-6 bg-[#FBF7EF] border-2 border-[#171717] rounded-xl shadow-[3px_3px_0_#171717]"
+          >
+            <div className="w-12 h-12 mx-auto mb-3 bg-[#EDE8DC] border border-[#171717] rounded-xl flex items-center justify-center font-mono text-xl">
+              ∅
+            </div>
+            <h3 className="text-base font-bold text-[#171717] mb-1">未匹配到相关入口</h3>
+            <p className="text-xs text-[#5F5E5A]">
+              尝试调整关键词、切换分类过滤标签，或在编辑模式下添加新的入口资产。
+            </p>
           </div>
-          <h3 className="text-base font-bold text-[#171717] mb-1">未匹配到相关入口</h3>
-          <p className="text-xs text-[#5F5E5A]">
-            尝试调整关键词、切换分类过滤标签，或在编辑模式下添加新的入口资产。
-          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 py-6">
-      {/* Grid container with exact testid and layout persistence */}
-      <div
-        data-testid="home-grid"
-        data-edit-mode={editMode}
-        className={`react-grid-layout grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 auto-rows-[88px] transition-all ${
-          editMode
-            ? 'p-3 bg-[#EDE8DC]/20 border-2 border-dashed border-[#171717] rounded-2xl'
-            : ''
-        }`}
-      >
-        {objects.map((obj) => {
-          const colSpan = getColSpanClass(obj.cardSize);
-          const isDragging = draggedId === obj.id;
-
-          return (
-            <div
-              key={obj.id}
-              className={`react-grid-item ${colSpan} transition-opacity duration-150 ${
-                isDragging ? 'opacity-40 scale-98' : 'opacity-100'
-              }`}
-              draggable={editMode && isOwner}
-              onDragStart={(e) => handleDragStart(e, obj.id)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, obj.id)}
-            >
-              <V4ResourceCard
-                object={obj}
-                isOwner={isOwner}
-                editMode={editMode}
-                onSelect={onSelectObject}
-                onTogglePin={onTogglePin}
-                onDelete={onDeleteObject}
-                onEdit={onEditObject}
-                onChangeSize={onChangeSize}
-              />
+    <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-5 pb-8">
+      {/* Outer Bordered Container with Title mounted directly on the top border */}
+      <div className="relative border-2 border-[#171717] rounded-2xl bg-[#FFFFFF] shadow-[4px_4px_0_#171717] pt-7 pb-5 px-3 sm:px-5">
+        {/* Title mounted directly on top border line */}
+        {title && (
+          <div className="absolute -top-3.5 left-4 sm:left-6 flex items-center gap-2 px-3 py-1 bg-[#FFD84D] border-2 border-[#171717] rounded-lg shadow-[2px_2px_0_#171717] z-10 select-none">
+            <span className="w-2 h-2 rounded-full bg-[#171717]" />
+            <div className="text-xs sm:text-sm font-bold text-[#171717] tracking-tight uppercase font-mono">
+              {title}
             </div>
-          );
-        })}
+          </div>
+        )}
+
+        <div className="absolute -top-3 right-4 sm:right-6 hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 bg-[#FFFFFF] border-2 border-[#171717] rounded-md text-[11px] font-mono text-[#5F5E5A] shadow-[2px_2px_0_#171717] z-10">
+          <span>6 列 Neo-Brutalism 网格</span>
+        </div>
+
+        {/* Grid container with exact testid and layout persistence */}
+        <div
+          data-testid="home-grid"
+          data-edit-mode={editMode}
+          className={`react-grid-layout grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 auto-rows-[88px] transition-all ${
+            editMode
+              ? 'p-2 bg-[#FFD84D]/10 border-2 border-dashed border-[#171717] rounded-xl'
+              : ''
+          }`}
+        >
+          {objects.map((obj) => {
+            const colSpan = getColSpanClass(obj.cardSize);
+            const isDragging = draggedId === obj.id;
+
+            return (
+              <div
+                key={obj.id}
+                className={`react-grid-item ${colSpan} transition-opacity duration-150 ${
+                  isDragging ? 'opacity-40 scale-98' : 'opacity-100'
+                }`}
+                draggable={editMode && isOwner}
+                onDragStart={(e) => handleDragStart(e, obj.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, obj.id)}
+              >
+                <V4ResourceCard
+                  object={obj}
+                  isOwner={isOwner}
+                  editMode={editMode}
+                  onSelect={onSelectObject}
+                  onTogglePin={onTogglePin}
+                  onDelete={onDeleteObject}
+                  onEdit={onEditObject}
+                  onChangeSize={onChangeSize}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

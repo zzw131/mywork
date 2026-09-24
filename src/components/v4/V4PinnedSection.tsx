@@ -1,7 +1,6 @@
 import React from 'react';
 import { WorkbenchObject, TYPE_VISUAL_MAP } from '../../types';
 import { Pin, ArrowUpRight, Copy, Check } from 'lucide-react';
-import { V4StatusDot } from './V4StatusDot';
 
 interface V4PinnedSectionProps {
   pinnedObjects: WorkbenchObject[];
@@ -59,7 +58,6 @@ export const V4PinnedSection: React.FC<V4PinnedSectionProps> = ({
                   >
                     {visual.label}
                   </span>
-                  <V4StatusDot status={obj.status} />
                 </div>
 
                 <h3 className="font-bold text-sm text-[#171717] group-hover:text-black line-clamp-1 mb-1">

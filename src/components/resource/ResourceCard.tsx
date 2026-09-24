@@ -3,7 +3,6 @@ import { WorkbenchObject, TYPE_VISUAL_MAP } from '../../types';
 import { Resource, ResourceSize } from '../../types/resource';
 import { toResource, toDatabaseCardSize, executeEntry } from '../../adapters/resourceAdapter';
 import { V4Badge } from '../v4/V4Badge';
-import { V4StatusDot } from '../v4/V4StatusDot';
 import {
   Pin,
   Trash2,
@@ -117,7 +116,6 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
       <div className="flex items-start justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-2 flex-wrap">
           <V4Badge type={res.type} />
-          <V4StatusDot status={res.status} />
           {res.pinned && (
             <span
               title="已置顶"
@@ -132,7 +130,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         {/* Owner Controls: STRICTLY excluded from DOM if not owner */}
         {isOwner && (
           <div
-            className={`flex items-center gap-1 bg-[#EDE8DC] border border-[#171717] rounded px-1.5 py-0.5 shadow-[2px_2px_0_#171717] z-10 transition-opacity ${
+            className={`flex items-center gap-1 bg-[#EDE8DC] border border-[#171717] rounded px-1.5 py-0.5 shadow-[2px_2px_0_#171717] z-10 transition-opacity ml-auto ${
               editMode
                 ? 'opacity-100'
                 : 'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto'

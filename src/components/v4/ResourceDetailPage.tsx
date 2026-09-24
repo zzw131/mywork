@@ -12,6 +12,7 @@ import {
   getEffectiveDetailBlocks,
   getEffectiveSecondaryEntries,
 } from '../../adapters/detailAdapter';
+import { getCustomTags } from '../../utils/tagManager';
 import { V4Badge } from './V4Badge';
 import { V4StatusDot } from './V4StatusDot';
 import { V4Button } from './V4Button';
@@ -887,14 +888,58 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
                 </span>
 
                 {isEditing ? (
-                  <div>
+                  <div className="space-y-2">
                     <input
                       type="text"
                       value={tagsInput}
                       onChange={(e) => setTagsInput(e.target.value)}
                       placeholder="逗号分隔，如: React, Tool"
-                      className="w-full text-xs font-mono p-2 bg-[#FBF7EF] border border-[#171717] rounded-lg"
+                      className="w-full text-xs font-mono p-2 bg-[#FBF7EF] border border-[#171717] rounded-lg focus:outline-none focus:bg-[#FFFFFF]"
                     />
+                    {/* Quick suggestion chips */}
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="text-[10px] font-mono text-[#888780] mr-1">常用备选:</span>
+                      {Array.from(
+                        new Set([
+                          ...getCustomTags(),
+                          'React',
+                          'TypeScript',
+                          'Node.js',
+                          '工具',
+                          '开源',
+                          '设计',
+                          '前端',
+                        ])
+                      )
+                        .slice(0, 8)
+                        .map((t) => {
+                          const currentTags = tagsInput
+                            .split(',')
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          const isSelected = currentTags.includes(t);
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => {
+                                const next = isSelected
+                                  ? currentTags.filter((x) => x !== t)
+                                  : [...currentTags, t];
+                                setTagsInput(next.join(', '));
+                              }}
+                              className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-mono border border-[#171717] cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-[#FFD84D] text-[#171717] font-bold shadow-[1px_1px_0_#171717]'
+                                  : 'bg-[#FFFFFF] text-[#5F5E5A] hover:bg-[#FBF7EF]'
+                              }`}
+                            >
+                              <span>#{t}</span>
+                              {isSelected && <X className="w-2.5 h-2.5 ml-0.5" />}
+                            </button>
+                          );
+                        })}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">

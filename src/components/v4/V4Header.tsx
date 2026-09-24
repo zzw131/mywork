@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserIdentity } from '../../types';
-import { Edit3, Plus, LogIn, LogOut, ShieldCheck } from 'lucide-react';
+import { Edit3, LogIn, LogOut, User, UserCheck, ChevronDown } from 'lucide-react';
 import { WorkbenchLogo } from './WorkbenchLogo';
 
 interface V4HeaderProps {
@@ -9,10 +9,10 @@ interface V4HeaderProps {
   onLogout: () => void;
   editMode: boolean;
   onToggleEditMode: () => void;
-  onOpenAddForm: () => void;
+  onOpenAddForm?: () => void;
   totalCount: number;
-  activeView?: 'workbench' | 'design-system' | 'resource-detail';
-  onSelectView?: (view: 'workbench' | 'design-system') => void;
+  activeView?: 'workbench' | 'goals' | 'design-system' | 'resource-detail';
+  onSelectView?: (view: 'workbench' | 'goals' | 'design-system') => void;
 }
 
 export const V4Header: React.FC<V4HeaderProps> = ({
@@ -27,13 +27,36 @@ export const V4Header: React.FC<V4HeaderProps> = ({
   onSelectView,
 }) => {
   const isOwner = identity.role === 'owner';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside or ESC
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
-    <header className="w-full bg-[#FFFFFF]">
-      <div className="w-full px-4 sm:px-8 pt-3.5 pb-1.5 flex flex-wrap items-center justify-between gap-4">
+    <header className="w-full bg-[#FFFFFF] border-b border-[#E2DDD3]">
+      <div className="w-full px-4 sm:px-8 py-3 sm:py-3.5 min-h-[66px] flex flex-wrap items-center justify-between gap-4">
         {/* Left: Brand & Identity - Compact two-line typography with aligned logo */}
         <div className="flex items-center gap-3">
-          <WorkbenchLogo className="w-[38px] h-[38px] sm:w-[40px] sm:h-[40px]" />
+          <WorkbenchLogo className="w-[40px] h-[40px] sm:w-[44px] sm:h-[44px]" />
           <div className="flex flex-col justify-center gap-0.5">
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#171717] leading-tight">
@@ -55,11 +78,11 @@ export const V4Header: React.FC<V4HeaderProps> = ({
         </div>
 
         {/* Right: Actions & Role Indicator Group - Grouped tightly together on the right */}
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           {/* PGlite 状态动态呼吸指示灯（含鼠标悬停浮动连接状态提示框） */}
           <div className="relative group flex items-center justify-center mr-1 shrink-0">
             <div
-              className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[#F3EFE6] transition-colors select-none cursor-pointer"
+              className="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#F3EFE6] transition-colors select-none cursor-pointer"
               tabIndex={0}
               role="status"
               aria-label="连接状态：正常运行"
@@ -90,13 +113,13 @@ export const V4Header: React.FC<V4HeaderProps> = ({
             </div>
           </div>
 
-          {/* View Switcher (Workbench vs Design System) */}
+          {/* View Switcher (Workbench vs Goals vs Design System) */}
           {onSelectView && (
-            <div className="flex items-center bg-[#FBF7EF] border-2 border-[#171717] rounded-lg p-0.5 shadow-[2px_2px_0_#171717]">
+            <div className="flex items-center bg-[#FBF7EF] border-2 border-[#171717] rounded-xl p-1 shadow-[2px_2px_0_#171717]">
               <button
                 type="button"
                 onClick={() => onSelectView('workbench')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
                   activeView === 'workbench'
                     ? 'bg-[#FFD84D] text-[#171717] shadow-[1px_1px_0_#171717]'
                     : 'text-[#5F5E5A] hover:text-[#171717]'
@@ -106,8 +129,19 @@ export const V4Header: React.FC<V4HeaderProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => onSelectView('goals')}
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                  activeView === 'goals'
+                    ? 'bg-[#FFD84D] text-[#171717] shadow-[1px_1px_0_#171717]'
+                    : 'text-[#5F5E5A] hover:text-[#171717]'
+                }`}
+              >
+                目标管理
+              </button>
+              <button
+                type="button"
                 onClick={() => onSelectView('design-system')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
                   activeView === 'design-system'
                     ? 'bg-[#FFD84D] text-[#171717] shadow-[1px_1px_0_#171717]'
                     : 'text-[#5F5E5A] hover:text-[#171717]'
@@ -118,66 +152,124 @@ export const V4Header: React.FC<V4HeaderProps> = ({
             </div>
           )}
 
-          {/* Login / Logout Controls */}
-          {isOwner ? (
-            <div className="flex items-center gap-2">
-              <div
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FFF9E6] border-2 border-[#171717] rounded-lg text-xs font-bold text-[#171717] shadow-[2px_2px_0_#171717] select-none"
-                title="当前状态：已登录"
-              >
-                <span className="text-[#10B981] font-mono text-sm leading-none">●</span>
-                <span>已登录</span>
-              </div>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="v4-btn v4-btn-default text-xs px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0_#171717]"
-                title="退出登录"
-              >
-                <LogOut className="w-3.5 h-3.5 text-[#5F5E5A]" />
-                <span>退出登录</span>
-              </button>
-            </div>
-          ) : (
+          {/* User Avatar "小人" Menu & Expandable Actions Group */}
+          <div className="relative" ref={menuRef}>
             <button
               type="button"
-              onClick={onLogin}
-              className="v4-btn v4-btn-yellow text-xs px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0_#171717] font-bold"
-              title="登录后管理你的工作台"
+              data-testid="user-menu-btn"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="用户与设置中心"
+              title={isOwner ? '邹大炮 (Owner) · 点击展开菜单' : '访客 (Guest) · 点击展开菜单'}
+              className={`relative h-10 px-3 flex items-center gap-2 rounded-xl border-2 border-[#171717] transition-all cursor-pointer shadow-[3px_3px_0_#171717] hover:shadow-[4px_4px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 ${
+                isOwner
+                  ? 'bg-[#FFF9E6] hover:bg-[#FFD84D]'
+                  : 'bg-[#FFFFFF] hover:bg-[#FBF7EF]'
+              } ${menuOpen ? 'translate-x-0.5 translate-y-0.5 shadow-[1px_1px_0_#171717]' : ''}`}
             >
-              <LogIn className="w-3.5 h-3.5 text-[#171717]" />
-              <span>登录</span>
-            </button>
-          )}
-
-          {/* Owner-only Edit Toggle Button (Strictly NOT rendered in DOM if Guest) */}
-          {isOwner && (
-            <>
-              <button
-                type="button"
-                data-testid="toggle-edit"
-                onClick={onToggleEditMode}
-                className={`v4-btn text-xs px-3.5 py-1.5 flex items-center gap-1.5 ${
-                  editMode ? 'v4-btn-yellow' : 'v4-btn-default'
+              <div className="relative flex items-center justify-center">
+                {isOwner ? (
+                  <UserCheck className="w-5 h-5 text-[#171717] stroke-[2.5]" />
+                ) : (
+                  <User className="w-5 h-5 text-[#171717] stroke-[2]" />
+                )}
+                {/* Online status indicator dot for logged-in user */}
+                {isOwner && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#10B981] border border-[#171717] rounded-full" />
+                )}
+              </div>
+              <span className="text-xs sm:text-sm font-mono font-bold text-[#171717]">
+                {isOwner ? '邹大炮' : '访客'}
+              </span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-[#5F5E5A] transition-transform duration-150 ${
+                  menuOpen ? 'rotate-180 text-[#171717]' : ''
                 }`}
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>{editMode ? '完成排版' : '编辑布局'}</span>
-              </button>
+              />
+            </button>
 
-              {editMode && (
-                <button
-                  type="button"
-                  data-testid="toggle-add"
-                  onClick={onOpenAddForm}
-                  className="v4-btn v4-btn-yellow text-xs px-3 py-1.5 flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>添加资产</span>
-                </button>
-              )}
-            </>
-          )}
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <div
+                data-testid="user-dropdown-menu"
+                className="absolute right-0 top-full mt-2 w-56 bg-[#FFFFFF] border-2 border-[#171717] rounded-xl shadow-[4px_4px_0_#171717] p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100 font-mono"
+              >
+                {/* User Info Header */}
+                <div className="px-2.5 py-2 mb-1.5 bg-[#FBF7EF] border border-[#171717] rounded-lg">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#171717]">
+                    <span
+                      className={`w-2 h-2 rounded-full border border-[#171717] ${
+                        isOwner ? 'bg-[#10B981]' : 'bg-[#D3D1C7]'
+                      }`}
+                    />
+                    <span>{isOwner ? '邹大炮 (Owner)' : '访客模式 (Guest)'}</span>
+                  </div>
+                  <div className="text-[10px] text-[#5F5E5A] mt-0.5">
+                    {isOwner
+                      ? '拥有全站资产与目标管理权限'
+                      : '浏览模式，登录后开启管理权限'}
+                  </div>
+                </div>
+
+                {/* Actions Group */}
+                <div className="space-y-1">
+                  {isOwner ? (
+                    <>
+                      {/* Button 1: Edit Mode Toggle */}
+                      <button
+                        type="button"
+                        data-testid="toggle-edit"
+                        onClick={() => {
+                          onToggleEditMode();
+                          setMenuOpen(false);
+                        }}
+                        className={`w-full text-xs px-2.5 py-2 rounded-lg border border-[#171717] flex items-center justify-between transition-all cursor-pointer ${
+                          editMode
+                            ? 'bg-[#FFD84D] font-bold shadow-[1px_1px_0_#171717]'
+                            : 'bg-[#FFFFFF] hover:bg-[#FFF9E6] text-[#171717]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>{editMode ? '退出编辑模式' : '编辑模式'}</span>
+                        </span>
+                        {editMode && (
+                          <span className="text-[10px] font-bold bg-[#171717] text-[#FFFFFF] px-1 rounded">
+                            ON
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Button 2: Logout */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLogout();
+                          setMenuOpen(false);
+                        }}
+                        className="w-full text-xs px-2.5 py-2 rounded-lg border border-[#171717] bg-[#FFFFFF] hover:bg-[#FFE2E2] text-[#B91C1C] flex items-center gap-2 transition-all cursor-pointer font-bold"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>退出登录</span>
+                      </button>
+                    </>
+                  ) : (
+                    /* Guest Mode: Shows Login, DOES NOT show Edit Mode */
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onLogin();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-xs px-2.5 py-2 rounded-lg border border-[#171717] bg-[#FFD84D] hover:bg-[#FACC15] text-[#171717] flex items-center justify-center gap-2 transition-all cursor-pointer font-bold shadow-[2px_2px_0_#171717]"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>管理员登录</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
