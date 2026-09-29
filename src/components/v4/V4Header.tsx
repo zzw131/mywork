@@ -11,8 +11,8 @@ interface V4HeaderProps {
   onToggleEditMode: () => void;
   onOpenAddForm?: () => void;
   totalCount: number;
-  activeView?: 'workbench' | 'goals' | 'design-system' | 'resource-detail';
-  onSelectView?: (view: 'workbench' | 'goals' | 'design-system') => void;
+  activeView?: 'workbench' | 'memos' | 'goals' | 'design-system' | 'resource-detail';
+  onSelectView?: (view: 'workbench' | 'memos' | 'goals' | 'design-system') => void;
 }
 
 export const V4Header: React.FC<V4HeaderProps> = ({
@@ -113,7 +113,7 @@ export const V4Header: React.FC<V4HeaderProps> = ({
             </div>
           </div>
 
-          {/* View Switcher (Workbench vs Goals vs Design System) */}
+          {/* View Switcher (Workbench vs Memos vs Goals vs Design System) */}
           {onSelectView && (
             <div className="flex items-center bg-[#FBF7EF] border-2 border-[#171717] rounded-xl p-1 shadow-[2px_2px_0_#171717]">
               <button
@@ -129,6 +129,17 @@ export const V4Header: React.FC<V4HeaderProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => onSelectView('memos')}
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                  activeView === 'memos'
+                    ? 'bg-[#FFD84D] text-[#171717] shadow-[1px_1px_0_#171717]'
+                    : 'text-[#5F5E5A] hover:text-[#171717]'
+                }`}
+              >
+                备忘录
+              </button>
+              <button
+                type="button"
                 onClick={() => onSelectView('goals')}
                 className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
                   activeView === 'goals'
@@ -137,17 +148,6 @@ export const V4Header: React.FC<V4HeaderProps> = ({
                 }`}
               >
                 目标管理
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectView('design-system')}
-                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                  activeView === 'design-system'
-                    ? 'bg-[#FFD84D] text-[#171717] shadow-[1px_1px_0_#171717]'
-                    : 'text-[#5F5E5A] hover:text-[#171717]'
-                }`}
-              >
-                规范库
               </button>
             </div>
           )}

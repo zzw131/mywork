@@ -28,8 +28,11 @@ import { DesignSystemPage } from './components/DesignSystemPage';
 import { AdminAuthModal } from './components/v4/AdminAuthModal';
 import { ResourceDetailPage } from './components/v4/ResourceDetailPage';
 import { GoalsPage } from './modules/goals';
+import { MemosPage } from './modules/memos';
+import { MemoQuickInput } from './modules/memos/MemoQuickInput';
+import { PenLine, X } from 'lucide-react';
 
-export type AppView = 'workbench' | 'goals' | 'design-system' | 'resource-detail';
+export type AppView = 'workbench' | 'memos' | 'goals' | 'design-system' | 'resource-detail';
 
 function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
   if (typeof window === 'undefined') return { view: 'workbench', resourceId: null };
@@ -49,12 +52,17 @@ function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
     return { view: 'resource-detail', resourceId: decodeURIComponent(hashMatch[1]) };
   }
 
-  // 3. Goals management
+  // 3. Memos management
+  if (path.includes('memos') || hash.includes('memos') || path.includes('memo') || hash.includes('memo')) {
+    return { view: 'memos', resourceId: null };
+  }
+
+  // 4. Goals management
   if (path.includes('goals') || hash.includes('goals')) {
     return { view: 'goals', resourceId: null };
   }
 
-  // 4. Design system
+  // 5. Design system
   if (path.includes('design-system') || hash.includes('design-system')) {
     return { view: 'design-system', resourceId: null };
   }
@@ -88,6 +96,15 @@ export default function App() {
       window.history.pushState({ view: 'workbench' }, '', '/');
     } catch {
       window.location.hash = '#';
+    }
+  };
+
+  const navigateToMemos = () => {
+    setCurrentRoute({ view: 'memos', resourceId: null });
+    try {
+      window.history.pushState({ view: 'memos' }, '', '/memos');
+    } catch {
+      window.location.hash = '#memos';
     }
   };
 
@@ -158,9 +175,22 @@ export default function App() {
   const [editingObject, setEditingObject] = useState<WorkbenchObject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isQuickMemoOpen, setIsQuickMemoOpen] = useState(false);
+
+  // Listen to open write memo custom event (triggered from under search icon)
+  useEffect(() => {
+    const handleOpen = () => {
+      if (identity.role === 'owner') {
+        setIsQuickMemoOpen(true);
+      }
+    };
+    window.addEventListener('workbench:open-write-memo', handleOpen);
+    return () => window.removeEventListener('workbench:open-write-memo', handleOpen);
+  }, [identity.role]);
 
   // Search & filter state (4-dimensional: Title, Tags, Summary, Entry path)
   const [searchQuery, setSearchQuery] = useState('');
+  const [memosSearchQuery, setMemosSearchQuery] = useState('');
   const [goalsSearchQuery, setGoalsSearchQuery] = useState('');
   const [dsSearchQuery, setDsSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FilterCategory>('all');
@@ -438,6 +468,16 @@ export default function App() {
           window.dispatchEvent(new CustomEvent('workbench:clear-search'));
           return;
         }
+        if (memosSearchQuery) {
+          e.preventDefault();
+          setMemosSearchQuery('');
+          return;
+        }
+        if (goalsSearchQuery) {
+          e.preventDefault();
+          setGoalsSearchQuery('');
+          return;
+        }
         if (selectedCategory !== 'all') {
           e.preventDefault();
           setSelectedCategory('all');
@@ -650,6 +690,8 @@ export default function App() {
         onSelectView={(v) => {
           if (v === 'workbench') {
             navigateToWorkbench();
+          } else if (v === 'memos') {
+            navigateToMemos();
           } else if (v === 'goals') {
             navigateToGoals();
           } else {
@@ -677,6 +719,8 @@ export default function App() {
         searchQuery={
           currentView === 'workbench'
             ? searchQuery
+            : currentView === 'memos'
+            ? memosSearchQuery
             : currentView === 'goals'
             ? goalsSearchQuery
             : currentView === 'design-system'
@@ -686,6 +730,8 @@ export default function App() {
         onSearchChange={(q) => {
           if (currentView === 'workbench') {
             setSearchQuery(q);
+          } else if (currentView === 'memos') {
+            setMemosSearchQuery(q);
           } else if (currentView === 'goals') {
             setGoalsSearchQuery(q);
           } else if (currentView === 'design-system') {
@@ -696,25 +742,42 @@ export default function App() {
         }}
         selectedCategory={currentView === 'workbench' ? selectedCategory : undefined}
         placeholder={
-          currentView === 'goals'
+          currentView === 'memos'
+            ? '搜索备忘标题、正文、标签…'
+            : currentView === 'goals'
             ? '搜索目标标题、简介、具体链接、复盘笔记...'
             : currentView === 'design-system'
             ? '搜索设计规范 Tokens、色彩、组件与阴影规范...'
             : '快速检索工作台标题、标签、摘要或入口路径（URL、本地路径、GitHub）...'
         }
         disabled={isOwner && editMode && currentView === 'workbench'}
+        isOwner={isOwner}
+        currentView={currentView}
+        onOpenWriteMemo={() => {
+          setIsQuickMemoOpen(true);
+        }}
       />
 
-      {/* View routing: Workbench vs Goals vs Design System vs Resource Detail */}
+      {/* View routing: Workbench vs Memos vs Goals vs Design System vs Resource Detail (with silky smooth page-fade-in transition) */}
       {currentView === 'design-system' ? (
-        <main className="flex-1">
+        <main key="design-system" className="flex-1 flex flex-col page-fade-in">
           <DesignSystemPage
             onBackToWorkbench={navigateToWorkbench}
             searchQuery={dsSearchQuery}
           />
         </main>
+      ) : currentView === 'memos' ? (
+        <main key="memos" className="flex-1 flex flex-col page-fade-in">
+          <MemosPage
+            identity={identity}
+            editMode={editMode}
+            onBackToWorkbench={navigateToWorkbench}
+            searchQuery={memosSearchQuery}
+            onSearchChange={setMemosSearchQuery}
+          />
+        </main>
       ) : currentView === 'goals' ? (
-        <main className="flex-1">
+        <main key="goals" className="flex-1 flex flex-col page-fade-in">
           <GoalsPage
             identity={identity}
             editMode={editMode}
@@ -726,7 +789,7 @@ export default function App() {
           />
         </main>
       ) : currentView === 'resource-detail' ? (
-        <main className="flex-1">
+        <main key="resource-detail" className="flex-1 flex flex-col page-fade-in">
           {objects.find((o) => o.id === currentResourceId) ? (
             <ResourceDetailPage
               object={objects.find((o) => o.id === currentResourceId)!}
@@ -739,7 +802,7 @@ export default function App() {
               }}
             />
           ) : (
-            <div className="w-full md:w-[85%] mx-auto px-6 py-16 text-center">
+            <div className="w-full px-4 sm:px-8 py-16 text-center">
               <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717] space-y-4">
                 <div className="w-12 h-12 bg-[#FFB4C6] border-2 border-[#171717] rounded-xl mx-auto flex items-center justify-center font-bold text-xl">
                   !
@@ -760,29 +823,37 @@ export default function App() {
           )}
         </main>
       ) : (
-        <>
-          {/* 3. Workbench Category Filters (Placed directly above Tag Panel) */}
-          <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-5 pb-1">
-            <V4CategoryFilter
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              categoryCounts={categoryCounts}
-              disabled={isOwner && editMode}
-            />
-          </div>
+        <main key="workbench" className="flex-1 flex flex-col page-fade-in">
+          {/* ===================== WORKBENCH CATEGORY & TAGS (Sticky Container 2) ===================== */}
+          <div
+            className="sticky z-20 bg-[#FBF7EF]/95 backdrop-blur-md pt-3.5 pb-4 sm:pt-4.5 sm:pb-5 border-b border-[#171717]/10"
+            style={{ top: 'var(--search-bar-height, 0px)' }}
+          >
+            <div className="w-full px-4 sm:px-8 space-y-3.5">
+              {/* Category Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[40px]">
+                <V4CategoryFilter
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  categoryCounts={categoryCounts}
+                  disabled={isOwner && editMode}
+                />
+              </div>
 
-          {/* 4. Tag Panel (Popular tags & expandable full cloud with CRUD in editMode) */}
-          <TagPanel
-            tags={allTagsWithCount}
-            selectedTag={selectedTag}
-            onSelectTag={setSelectedTag}
-            topLimit={8}
-            editMode={editMode}
-            isOwner={isOwner}
-            onCreateTag={handleCreateTag}
-            onRenameTag={handleRenameTag}
-            onDeleteTag={handleDeleteTag}
-          />
+              {/* Tag Panel */}
+              <TagPanel
+                tags={allTagsWithCount}
+                selectedTag={selectedTag}
+                onSelectTag={setSelectedTag}
+                topLimit={8}
+                editMode={editMode}
+                isOwner={isOwner}
+                onCreateTag={handleCreateTag}
+                onRenameTag={handleRenameTag}
+                onDeleteTag={handleDeleteTag}
+              />
+            </div>
+          </div>
 
           {/* 4. Pinned Quick Picks Section (Only on clean home page) */}
           {!searchQuery && selectedCategory === 'all' && !selectedTag && (
@@ -793,7 +864,7 @@ export default function App() {
           )}
 
           {/* Section Title Bar */}
-          <div className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-4 pb-1 flex items-center justify-between">
+          <div className="w-full px-4 sm:px-8 pt-6 sm:pt-8 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-4 bg-[#171717] rounded-xs" />
               <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase">
@@ -812,7 +883,7 @@ export default function App() {
           </div>
 
           {/* 5. Main Resource Grid Canvas (with data-testid="home-grid") */}
-          <main className="flex-1">
+          <div className="flex-1">
             <HomeGrid
               objects={filteredObjects}
               editMode={isOwner && editMode}
@@ -824,8 +895,8 @@ export default function App() {
               onEditObject={handleOpenEdit}
               onChangeSize={handleChangeSize}
             />
-          </main>
-        </>
+          </div>
+        </main>
       )}
 
       {/* 6. Detail Modal Overlay */}
@@ -859,8 +930,46 @@ export default function App() {
         onSuccess={handleAdminAuthSuccess}
       />
 
-      {/* 9. Global Status Footer */}
-      <V4Footer />
+      {/* 9. Floating Quick Memo Modal (Management Mode only) */}
+      {isOwner && isQuickMemoOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="写备忘录 · 记点什么"
+          className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-[#171717]/40 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsQuickMemoOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl bg-[#FFFFFF] border-3 border-[#171717] rounded-2xl shadow-[8px_8px_0_#171717] p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            {/* Modal Header: 仅保留标题与关闭按钮，中间的分割线 */}
+            <div className="flex items-center justify-between border-b-2 border-[#171717] pb-3">
+              <h3 className="font-bold text-base text-[#171717]">写备忘录</h3>
+              <button
+                type="button"
+                onClick={() => setIsQuickMemoOpen(false)}
+                className="p-1 hover:bg-[#EDE8DC] rounded-lg transition-all cursor-pointer text-[#171717]"
+                title="关闭 (ESC)"
+              >
+                <X className="w-5 h-5 text-[#171717]" />
+              </button>
+            </div>
+
+            <MemoQuickInput
+              onMemoCreated={() => {
+                setIsQuickMemoOpen(false);
+                window.dispatchEvent(new CustomEvent('workbench:memos-updated'));
+              }}
+              onClose={() => setIsQuickMemoOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 10. Global Status Footer: 底部文字链接直达规范库 */}
+      <V4Footer onOpenDesignSystem={navigateToDesignSystem} />
     </div>
   );
 }

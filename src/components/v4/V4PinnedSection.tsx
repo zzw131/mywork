@@ -23,7 +23,7 @@ export const V4PinnedSection: React.FC<V4PinnedSectionProps> = ({
   };
 
   return (
-    <section className="w-full md:w-[85%] lg:w-[80%] mx-auto px-4 sm:px-6 pt-6 pb-2">
+    <section className="w-full px-4 sm:px-8 pt-6 pb-2">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-5 h-5 bg-[#FFD84D] border border-[#171717] rounded shadow-[2px_2px_0_#171717]">

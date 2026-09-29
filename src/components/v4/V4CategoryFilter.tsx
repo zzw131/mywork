@@ -62,7 +62,7 @@ export const V4CategoryFilter: React.FC<V4CategoryFilterProps> = ({
     <div
       role="tablist"
       aria-label="工作台分类筛选"
-      className={`flex items-center gap-2 sm:gap-2.5 overflow-x-auto py-1 scrollbar-none ${
+      className={`flex items-center gap-2 sm:gap-2.5 flex-wrap p-1 -m-1 ${
         disabled ? 'opacity-50 pointer-events-none' : ''
       }`}
     >
@@ -91,18 +91,18 @@ export const V4CategoryFilter: React.FC<V4CategoryFilterProps> = ({
                 onSelectCategory(CATEGORY_ORDER[prevIdx]);
               }
             }}
-            className={`h-9 sm:h-10 px-3 sm:px-3.5 rounded-xl border-2 border-[#171717] flex items-center gap-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl border-2 border-[#171717] flex items-center gap-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer select-none ${
               isActive
-                ? 'bg-[#171717] text-[#FFFFFF] shadow-[3px_3px_0_#FFD84D] -translate-y-0.5'
-                : 'bg-[#FFFFFF] text-[#171717] hover:bg-[#FBF7EF] shadow-[3px_3px_0_#171717] hover:-translate-y-0.5'
+                ? 'bg-[#171717] text-[#FFFFFF] shadow-[3px_3px_0_#FFD84D]'
+                : 'bg-[#FFFFFF] text-[#171717] hover:bg-[#FBF7EF] shadow-[3px_3px_0_#171717]'
             }`}
           >
-            <span className={isActive ? 'text-[#FFD84D]' : 'text-[#5F5E5A]'}>
+            <span className={`shrink-0 flex items-center ${isActive ? 'text-[#FFD84D]' : 'text-[#5F5E5A]'}`}>
               {btn.icon}
             </span>
-            <span>{btn.label}</span>
+            <span className="leading-none">{btn.label}</span>
             <span
-              className={`px-1.5 py-0.2 rounded-md text-[11px] font-mono font-bold ${
+              className={`inline-flex items-center justify-center px-1.5 py-0.5 min-w-[20px] rounded-md text-[11px] font-mono font-bold leading-none shrink-0 ${
                 isActive
                   ? 'bg-[#FFFFFF] text-[#171717]'
                   : 'bg-[#EDE8DC] text-[#171717]'

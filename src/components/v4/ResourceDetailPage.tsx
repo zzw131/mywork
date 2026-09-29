@@ -262,7 +262,7 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
 
       {/* Top Breadcrumb & Navigation Bar */}
       <div className="w-full bg-[#FFFFFF] border-b-2 border-[#171717]">
-        <div className="w-full md:w-[90%] lg:w-[85%] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -299,7 +299,7 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <main className="w-full md:w-[90%] lg:w-[85%] mx-auto px-4 sm:px-6 pt-6 flex-1">
+      <main className="w-full px-4 sm:px-8 pt-6 flex-1">
         {/* ===================== HERO SECTION ===================== */}
         <header className="p-6 sm:p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717] mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">

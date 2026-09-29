@@ -117,7 +117,6 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
   const totalCount = goals.length;
   const inProgressCount = goals.filter((g) => g.status === 'in_progress').length;
   const completedCount = goals.filter((g) => g.status === 'completed').length;
-  const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   // Compute goal tags with counts (categories + goal custom tags + global custom tags)
   const allGoalTagsWithCount = useMemo(() => {
@@ -301,7 +300,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FBF7EF] text-[#171717] pb-20 flex flex-col">
+    <div className="w-full bg-[#FBF7EF] text-[#171717] pb-20 flex flex-col flex-1">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 px-4 py-2.5 bg-[#FFD84D] border-2 border-[#171717] rounded-xl shadow-[4px_4px_0_#171717] font-mono text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
@@ -310,179 +309,73 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
         </div>
       )}
 
-      {/* 0. Owner Goals Edit Toolbar (Matching V4EditToolbar, visible only in editMode) */}
-      {isOwner && editMode && (
-        <div
-          data-testid="goals-edit-toolbar"
-          className="sticky top-0 z-30 w-full bg-[#FFD84D] border-b-2 border-[#171717] py-2.5 px-4 sm:px-8 shadow-[0_4px_0_#171717]"
-        >
-          <div className="w-full flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm font-bold text-[#171717]">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center justify-center w-5 h-5 bg-[#171717] text-[#FFFFFF] rounded-full text-xs">
-                !
-              </span>
-              <span>目标编辑模式生效中</span>
-              <span className="hidden md:inline font-normal text-xs text-[#171717]/80">
-                — 可在此快速创建新目标，或对卡片进行编辑与清理
-              </span>
+      {/* ===================== FILTER / SWITCHER AREA (Sticky Container 2) ===================== */}
+      <div
+        className="sticky z-20 bg-[#FBF7EF]/95 backdrop-blur-md pt-3.5 pb-4 sm:pt-4.5 sm:pb-5 border-b border-[#171717]/10"
+        style={{ top: 'var(--search-bar-height, 0px)' }}
+      >
+        <div className="w-full px-4 sm:px-8 space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[40px]">
+            {/* Status Switcher Tabs */}
+            <div
+              role="tablist"
+              aria-label="目标状态筛选"
+              className="flex items-center gap-2 sm:gap-2.5 flex-wrap p-1 -m-1"
+            >
+              {[
+                { key: 'all' as const, label: '全部', count: totalCount, icon: <Sparkles className="w-4 h-4 shrink-0" /> },
+                { key: 'in_progress' as const, label: '未完成', count: inProgressCount, icon: <Clock className="w-4 h-4 shrink-0" /> },
+                { key: 'completed' as const, label: '已达成', count: completedCount, icon: <CheckCircle2 className="w-4 h-4 shrink-0" /> },
+              ].map((tab) => {
+                const isActive = statusFilter === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setStatusFilter(tab.key)}
+                    className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl border-2 border-[#171717] flex items-center gap-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer select-none ${
+                      isActive
+                        ? 'bg-[#171717] text-[#FFFFFF] shadow-[3px_3px_0_#FFD84D]'
+                        : 'bg-[#FFFFFF] text-[#171717] hover:bg-[#FBF7EF] shadow-[3px_3px_0_#171717]'
+                    }`}
+                  >
+                    <span className={`shrink-0 flex items-center ${isActive ? 'text-[#FFD84D]' : 'text-[#5F5E5A]'}`}>
+                      {tab.icon}
+                    </span>
+                    <span className="leading-none">{tab.label}</span>
+                    <span
+                      className={`inline-flex items-center justify-center px-1.5 py-0.5 min-w-[20px] rounded-md text-[11px] font-mono font-bold leading-none shrink-0 ${
+                        isActive
+                          ? 'bg-[#FFFFFF] text-[#171717]'
+                          : 'bg-[#EDE8DC] text-[#171717]'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            {/* In Edit Mode: Keep New Goal Action Button right here */}
+            {isOwner && editMode && (
               <button
                 type="button"
-                data-testid="goals-toolbar-add-btn"
                 onClick={() => {
                   setEditingGoal(null);
                   setIsFormOpen(true);
                 }}
-                className="v4-btn v4-btn-default text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0_#171717]"
+                className="inline-flex items-center gap-2 px-4 h-9 sm:h-10 text-xs sm:text-sm font-mono font-bold bg-[#FFD84D] hover:bg-[#FACC15] text-[#171717] border-2 border-[#171717] rounded-xl shadow-[3px_3px_0_#171717] hover:-translate-y-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>新增目标</span>
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ 新建未完成目标</span>
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Container */}
-      <main className="w-full md:w-[90%] lg:w-[85%] mx-auto px-4 sm:px-6 pt-6 flex-1 space-y-6">
-        {/* ===================== HERO STATS PANEL ===================== */}
-        <header className="p-6 sm:p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717]">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* Title & Slogan */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#171717]">
-                  设定明确目标，打对号记录每一次达成
-                </h1>
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-[#FBF7EF] border border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[1px_1px_0_#171717]">
-                  <Target className="w-3.5 h-3.5 text-[#171717]" />
-                  <span>目标管理模块 · OBJECTIVES</span>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm font-mono text-[#5F5E5A] leading-relaxed whitespace-nowrap overflow-x-auto scrollbar-none">
-                连接工程项目、效能工具、学习突破与产品发布。可以打对号增加未完成的目标，达成后手动记录成果复盘手记。
-              </p>
-            </div>
-
-            {/* Owner Action: Add Incomplete Goal (Only in Edit Mode) */}
-            {isOwner && editMode && (
-              <div className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingGoal(null);
-                    setIsFormOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-3 text-sm font-mono font-bold bg-[#FFD84D] hover:bg-[#FACC15] text-[#171717] border-2 border-[#171717] rounded-xl shadow-[4px_4px_0_#171717] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>+ 新建未完成目标</span>
-                </button>
-              </div>
             )}
           </div>
 
-          {/* Quick Stats Strip (Height reduced, top border removed, short & subtle vertical dividers) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 mt-2 sm:mt-2.5 pt-0.5 sm:pt-1">
-            {/* 1. 总记录目标 */}
-            <div className="relative flex flex-col items-center justify-center text-center px-2 sm:px-4 py-1">
-              <span className="text-[11px] sm:text-xs font-mono text-[#73726C] font-bold mb-0.5 flex items-center justify-center gap-1">
-                <span>总记录目标</span>
-              </span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-[#171717] leading-tight">
-                {totalCount}
-              </span>
-              {/* Short, subtle vertical divider on the right */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 sm:h-6 w-px sm:w-[1.5px] bg-[#171717]/20" />
-            </div>
-
-            {/* 2. 进行中 (未完成) */}
-            <div className="relative flex flex-col items-center justify-center text-center px-2 sm:px-4 py-1">
-              <span className="text-[11px] sm:text-xs font-mono text-[#B45309] font-bold mb-0.5 flex items-center justify-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#B45309]" />
-                <span>进行中 (未完成)</span>
-              </span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-[#B45309] leading-tight">
-                {inProgressCount}
-              </span>
-              {/* Short, subtle vertical divider on desktop (hidden on 2-col mobile) */}
-              <div className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 h-5 sm:h-6 w-px sm:w-[1.5px] bg-[#171717]/20" />
-            </div>
-
-            {/* 3. 已达成 (已打对号) */}
-            <div className="relative flex flex-col items-center justify-center text-center px-2 sm:px-4 py-1">
-              <span className="text-[11px] sm:text-xs font-mono text-[#15803d] font-bold mb-0.5 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#15803d]" />
-                <span>已达成 (已打对号)</span>
-              </span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-[#15803d] leading-tight">
-                {completedCount}
-              </span>
-              {/* Short, subtle vertical divider on the right */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 sm:h-6 w-px sm:w-[1.5px] bg-[#171717]/20" />
-            </div>
-
-            {/* 4. 目标达成率 */}
-            <div className="relative flex flex-col items-center justify-center text-center px-2 sm:px-4 py-1">
-              <span className="text-[11px] sm:text-xs font-mono text-[#73726C] font-bold mb-0.5 flex items-center justify-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-[#EAB308]" />
-                <span>目标达成率</span>
-              </span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-[#171717] leading-tight">
-                {completionRate}%
-              </span>
-            </div>
-          </div>
-        </header>
-
-        {/* ===================== FILTER / SWITCHER AREA (Synced with Workbench style) ===================== */}
-        <div className="space-y-3">
-          {/* Status Switcher Tabs */}
-          <div
-            role="tablist"
-            aria-label="目标状态筛选"
-            className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto py-1 scrollbar-none"
-          >
-            {[
-              { key: 'all' as const, label: '全部', count: totalCount, icon: <Sparkles className="w-4 h-4" /> },
-              { key: 'in_progress' as const, label: '未完成', count: inProgressCount, icon: <Clock className="w-4 h-4" /> },
-              { key: 'completed' as const, label: '已达成', count: completedCount, icon: <CheckCircle2 className="w-4 h-4" /> },
-            ].map((tab) => {
-              const isActive = statusFilter === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setStatusFilter(tab.key)}
-                  className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl border-2 border-[#171717] flex items-center gap-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-[#171717] text-[#FFFFFF] shadow-[3px_3px_0_#FFD84D] -translate-y-0.5'
-                      : 'bg-[#FFFFFF] text-[#171717] hover:bg-[#FBF7EF] shadow-[3px_3px_0_#171717] hover:-translate-y-0.5'
-                  }`}
-                >
-                  <span className={isActive ? 'text-[#FFD84D]' : 'text-[#5F5E5A]'}>
-                    {tab.icon}
-                  </span>
-                  <span>{tab.label}</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded-md text-[11px] font-mono font-bold ${
-                      isActive
-                        ? 'bg-[#FFFFFF] text-[#171717]'
-                        : 'bg-[#EDE8DC] text-[#171717]'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Container 2: 常用标签筛选 synced from homepage TagPanel with full CRUD in editMode */}
+          {/* Container 2: 常用标签筛选 synced with MemosPage tag bar */}
           <TagPanel
             tags={allGoalTagsWithCount}
             selectedTag={selectedGoalTag}
@@ -493,10 +386,13 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
             onCreateTag={handleCreateGoalTag}
             onRenameTag={handleRenameGoalTag}
             onDeleteTag={handleDeleteGoalTag}
-            customClass="pt-0.5"
-            title="常用标签筛选"
+            title="常用标签"
           />
         </div>
+      </div>
+
+      {/* Main Container */}
+      <main className="w-full px-4 sm:px-8 pt-6 sm:pt-8 pb-12 flex-1 space-y-6">
 
         {/* ===================== GOALS CARD LIST ===================== */}
         <section className="space-y-4">
