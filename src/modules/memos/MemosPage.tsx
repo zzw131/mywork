@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Memo, MemoFilterTab } from './types';
 import {
   loadMemos,
+  createMemo,
   togglePinMemo,
   toggleArchiveMemo,
   deleteMemo,
@@ -100,8 +101,18 @@ export const MemosPage: React.FC<MemosPageProps> = ({
     const handleMemosUpdated = () => {
       setMemos(loadMemos());
     };
+    const handleOpenCreateMemo = () => {
+      const newMemo = createMemo({ content: '', title: '' });
+      setEditingMemo(newMemo);
+    };
     window.addEventListener('workbench:memos-updated', handleMemosUpdated);
-    return () => window.removeEventListener('workbench:memos-updated', handleMemosUpdated);
+    window.addEventListener('workbench:open-create-memo', handleOpenCreateMemo);
+    window.addEventListener('workbench:open-write-memo', handleOpenCreateMemo);
+    return () => {
+      window.removeEventListener('workbench:memos-updated', handleMemosUpdated);
+      window.removeEventListener('workbench:open-create-memo', handleOpenCreateMemo);
+      window.removeEventListener('workbench:open-write-memo', handleOpenCreateMemo);
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -346,6 +357,20 @@ export const MemosPage: React.FC<MemosPageProps> = ({
                 {archivedMemos.length}
               </span>
             </button>
+
+            {/* Admin Add Memo Button */}
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('workbench:open-write-memo'));
+                }}
+                className="h-9 sm:h-10 px-3.5 sm:px-4 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold bg-[#FFD84D] hover:bg-[#FACC15] text-[#171717] border-2 border-[#171717] rounded-xl shadow-[3px_3px_0_#171717] hover:-translate-y-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>新建备忘</span>
+              </button>
+            )}
           </div>
         </div>
 

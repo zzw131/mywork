@@ -100,6 +100,51 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
     setConfirmDelete(false);
   }, [object]);
 
+  // Listen to sidebar trigger events
+  useEffect(() => {
+    const handleEditEvent = () => setIsEditing(true);
+    const handleAddBlockEvent = () => {
+      setIsEditing(true);
+      handleAddBlock('text');
+      // Scroll down to blocks
+      setTimeout(() => {
+        const el = document.getElementById('detail-blocks-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    };
+    const handleAddSecondaryEvent = () => {
+      setIsEditing(true);
+      handleAddSecondaryEntry();
+      setTimeout(() => {
+        const el = document.getElementById('detail-secondary-entries-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    };
+    const handleDeleteEvent = () => {
+      if (window.confirm(`确定要彻底删除资产「${object.title}」吗？`)) {
+        onDeleteObject(object.id);
+        onBackToHome();
+      }
+    };
+    const handleOpenPrimaryEvent = () => {
+      handleOpenPrimary();
+    };
+
+    window.addEventListener('workbench:detail-edit', handleEditEvent);
+    window.addEventListener('workbench:detail-add-block', handleAddBlockEvent);
+    window.addEventListener('workbench:detail-add-secondary', handleAddSecondaryEvent);
+    window.addEventListener('workbench:detail-delete', handleDeleteEvent);
+    window.addEventListener('workbench:detail-open-primary', handleOpenPrimaryEvent);
+
+    return () => {
+      window.removeEventListener('workbench:detail-edit', handleEditEvent);
+      window.removeEventListener('workbench:detail-add-block', handleAddBlockEvent);
+      window.removeEventListener('workbench:detail-add-secondary', handleAddSecondaryEvent);
+      window.removeEventListener('workbench:detail-delete', handleDeleteEvent);
+      window.removeEventListener('workbench:detail-open-primary', handleOpenPrimaryEvent);
+    };
+  }, [object, onDeleteObject, onBackToHome]);
+
   const visual = TYPE_VISUAL_MAP[object.type] || TYPE_VISUAL_MAP.generic;
   const protocol = detectProtocol(targetUrl);
 

@@ -6,7 +6,6 @@ import { V4ResourceCard } from './v4/V4ResourceCard';
 export interface HomeGridProps {
   title?: React.ReactNode;
   objects: WorkbenchObject[];
-  editMode: boolean;
   isOwner: boolean;
   onSelectObject: (obj: WorkbenchObject) => void;
   onTogglePin: (id: string) => void;
@@ -19,7 +18,6 @@ export interface HomeGridProps {
 export const HomeGrid: React.FC<HomeGridProps> = ({
   title,
   objects,
-  editMode,
   isOwner,
   onSelectObject,
   onTogglePin,
@@ -46,20 +44,20 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
-    if (!editMode || !isOwner) return;
+    if (!isOwner) return;
     setDraggedId(id);
     e.dataTransfer.setData('text/plain', id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!editMode || !isOwner) return;
+    if (!isOwner) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
-    if (!editMode || !isOwner) return;
+    if (!isOwner) return;
     e.preventDefault();
     if (draggedId && draggedId !== targetId) {
       onReorder(draggedId, targetId);
@@ -71,7 +69,6 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
     return (
       <div
         data-testid="home-grid"
-        data-edit-mode={editMode}
         className="react-grid-layout w-full px-4 sm:px-8 py-16 text-center"
       >
         <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[4px_4px_0_#171717]">
@@ -80,7 +77,7 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
           </div>
           <h3 className="text-base font-bold text-[#171717] mb-1">未匹配到相关入口</h3>
           <p className="text-xs text-[#5F5E5A]">
-            尝试调整关键词、切换分类过滤标签，或在编辑模式下添加新的入口资产。
+            尝试调整关键词、切换左侧分类或标签筛选条件，或新增入口资产。
           </p>
         </div>
       </div>
@@ -88,16 +85,11 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
   }
 
   return (
-    <div className="w-full px-4 sm:px-8 py-6">
-      {/* Grid container with exact testid and layout persistence */}
+    <div className="w-full px-4 sm:px-8 py-4">
+      {/* Grid container with exact testid and direct reorder capability */}
       <div
         data-testid="home-grid"
-        data-edit-mode={editMode}
-        className={`react-grid-layout grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 auto-rows-[88px] transition-all ${
-          editMode
-            ? 'p-3 bg-[#EDE8DC]/20 border-2 border-dashed border-[#171717] rounded-2xl'
-            : ''
-        }`}
+        className="react-grid-layout grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 auto-rows-[88px] transition-all"
       >
         {objects.map((obj) => {
           const colSpan = getColSpanClass(obj.cardSize);
@@ -106,10 +98,10 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
           return (
             <div
               key={obj.id}
-              className={`react-grid-item ${colSpan} transition-opacity duration-150 ${
-                isDragging ? 'opacity-40 scale-98' : 'opacity-100'
+              className={`react-grid-item ${colSpan} transition-all duration-150 ${
+                isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
               }`}
-              draggable={editMode && isOwner}
+              draggable={isOwner}
               onDragStart={(e) => handleDragStart(e, obj.id)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, obj.id)}
@@ -117,7 +109,6 @@ export const HomeGrid: React.FC<HomeGridProps> = ({
               <V4ResourceCard
                 object={obj}
                 isOwner={isOwner}
-                editMode={editMode}
                 onSelect={onSelectObject}
                 onTogglePin={onTogglePin}
                 onDelete={onDeleteObject}

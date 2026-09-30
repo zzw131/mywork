@@ -104,8 +104,16 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
     const handleGoalsUpdated = () => {
       setGoals(loadGoals());
     };
+    const handleOpenCreateGoal = () => {
+      setEditingGoal(null);
+      setIsFormOpen(true);
+    };
     window.addEventListener('workbench:goals-updated', handleGoalsUpdated);
-    return () => window.removeEventListener('workbench:goals-updated', handleGoalsUpdated);
+    window.addEventListener('workbench:open-create-goal', handleOpenCreateGoal);
+    return () => {
+      window.removeEventListener('workbench:goals-updated', handleGoalsUpdated);
+      window.removeEventListener('workbench:open-create-goal', handleOpenCreateGoal);
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -359,8 +367,8 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
               })}
             </div>
 
-            {/* In Edit Mode: Keep New Goal Action Button right here */}
-            {isOwner && editMode && (
+            {/* Admin Add Goal Action Button */}
+            {isOwner && (
               <button
                 type="button"
                 onClick={() => {
@@ -370,7 +378,7 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                 className="inline-flex items-center gap-2 px-4 h-9 sm:h-10 text-xs sm:text-sm font-mono font-bold bg-[#FFD84D] hover:bg-[#FACC15] text-[#171717] border-2 border-[#171717] rounded-xl shadow-[3px_3px_0_#171717] hover:-translate-y-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
-                <span>+ 新建未完成目标</span>
+                <span>新建目标</span>
               </button>
             )}
           </div>

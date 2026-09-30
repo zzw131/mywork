@@ -43,6 +43,8 @@ export interface Resource {
  */
 export type FilterCategory = 'all' | 'project' | 'tool' | 'web' | 'learning' | 'reference';
 
+export type AppView = 'workbench' | 'memos' | 'goals' | 'design-system' | 'resource-detail';
+
 export interface FilterCategoryItem {
   key: FilterCategory;
   label: string;

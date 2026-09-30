@@ -1,13 +1,11 @@
 import React from 'react';
 import { WorkbenchObject } from '../../types';
-import { Resource, ResourceSize } from '../../types/resource';
-import { toResource } from '../../adapters/resourceAdapter';
+import { ResourceSize } from '../../types/resource';
 import { ResourceCard } from '../resource/ResourceCard';
 
 export interface V4ResourceCardProps {
   object: WorkbenchObject;
   isOwner: boolean;
-  editMode: boolean;
   onSelect: (obj: WorkbenchObject) => void;
   onTogglePin?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -18,7 +16,6 @@ export interface V4ResourceCardProps {
 export const V4ResourceCard: React.FC<V4ResourceCardProps> = ({
   object,
   isOwner,
-  editMode,
   onSelect,
   onTogglePin,
   onDelete,
@@ -29,7 +26,6 @@ export const V4ResourceCard: React.FC<V4ResourceCardProps> = ({
     <ResourceCard
       resource={object}
       isOwner={isOwner}
-      editMode={editMode}
       onSelect={() => onSelect(object)}
       onTogglePin={onTogglePin}
       onDelete={onDelete}

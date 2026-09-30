@@ -5,11 +5,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { WorkbenchObject, UserIdentity } from './types';
-import { FilterCategory, ResourceSize } from './types/resource';
+import { FilterCategory, ResourceSize, AppView } from './types/resource';
 import { toDatabaseCardSize } from './adapters/resourceAdapter';
 import { SEED_OBJECTS } from './data/seedData';
 import { V4Header } from './components/v4/V4Header';
-import { V4SearchToolbar } from './components/v4/V4SearchToolbar';
+import { PageSidebar } from './components/layout/PageSidebar';
 import { V4CategoryFilter } from './components/v4/V4CategoryFilter';
 import { TagPanel } from './components/layout/TagPanel';
 import {
@@ -19,7 +19,6 @@ import {
   getCustomTags,
 } from './utils/tagManager';
 import { V4PinnedSection } from './components/v4/V4PinnedSection';
-import { V4EditToolbar } from './components/v4/V4EditToolbar';
 import { HomeGrid } from './components/HomeGrid';
 import { DetailModal } from './components/v4/DetailModal';
 import { AddResourceModal } from './components/resource/AddResourceModal';
@@ -30,9 +29,7 @@ import { ResourceDetailPage } from './components/v4/ResourceDetailPage';
 import { GoalsPage } from './modules/goals';
 import { MemosPage } from './modules/memos';
 import { MemoQuickInput } from './modules/memos/MemoQuickInput';
-import { PenLine, X } from 'lucide-react';
-
-export type AppView = 'workbench' | 'memos' | 'goals' | 'design-system' | 'resource-detail';
+import { X, Search } from 'lucide-react';
 
 function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
   if (typeof window === 'undefined') return { view: 'workbench', resourceId: null };
@@ -71,14 +68,18 @@ function parseCurrentRoute(): { view: AppView; resourceId: string | null } {
 }
 
 export default function App() {
-  // View routing: 'workbench' | 'design-system' | 'resource-detail'
+  // View routing: 'workbench' | 'memos' | 'goals' | 'design-system' | 'resource-detail'
   const [currentRoute, setCurrentRoute] = useState(parseCurrentRoute);
   const currentView = currentRoute.view;
   const currentResourceId = currentRoute.resourceId;
 
+  // Mobile sidebar drawer state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const navigateToResource = (id: string) => {
     setCurrentRoute({ view: 'resource-detail', resourceId: id });
     setSelectedObject(null);
+    setIsMobileSidebarOpen(false);
     try {
       window.history.pushState(
         { view: 'resource-detail', id },
@@ -92,6 +93,7 @@ export default function App() {
 
   const navigateToWorkbench = () => {
     setCurrentRoute({ view: 'workbench', resourceId: null });
+    setIsMobileSidebarOpen(false);
     try {
       window.history.pushState({ view: 'workbench' }, '', '/');
     } catch {
@@ -101,6 +103,7 @@ export default function App() {
 
   const navigateToMemos = () => {
     setCurrentRoute({ view: 'memos', resourceId: null });
+    setIsMobileSidebarOpen(false);
     try {
       window.history.pushState({ view: 'memos' }, '', '/memos');
     } catch {
@@ -110,6 +113,7 @@ export default function App() {
 
   const navigateToGoals = () => {
     setCurrentRoute({ view: 'goals', resourceId: null });
+    setIsMobileSidebarOpen(false);
     try {
       window.history.pushState({ view: 'goals' }, '', '/goals');
     } catch {
@@ -119,6 +123,7 @@ export default function App() {
 
   const navigateToDesignSystem = () => {
     setCurrentRoute({ view: 'design-system', resourceId: null });
+    setIsMobileSidebarOpen(false);
     try {
       window.history.pushState({ view: 'design-system' }, '', '/#design-system');
     } catch {
@@ -154,7 +159,7 @@ export default function App() {
     return SEED_OBJECTS;
   });
 
-  // Identity state: defaults to guest (未登录状态), login as owner requires password (123456)
+  // Identity state: defaults to guest, login as owner requires password
   const [identity, setIdentity] = useState<UserIdentity>(() => {
     try {
       const isAuth = sessionStorage.getItem('workbench_is_owner') === 'true';
@@ -169,26 +174,11 @@ export default function App() {
     };
   });
 
-  // Edit mode state
-  const [editMode, setEditMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingObject, setEditingObject] = useState<WorkbenchObject | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [isQuickMemoOpen, setIsQuickMemoOpen] = useState(false);
 
-  // Listen to open write memo custom event (triggered from under search icon)
-  useEffect(() => {
-    const handleOpen = () => {
-      if (identity.role === 'owner') {
-        setIsQuickMemoOpen(true);
-      }
-    };
-    window.addEventListener('workbench:open-write-memo', handleOpen);
-    return () => window.removeEventListener('workbench:open-write-memo', handleOpen);
-  }, [identity.role]);
-
-  // Search & filter state (4-dimensional: Title, Tags, Summary, Entry path)
+  // Search & filter state (Workbench)
   const [searchQuery, setSearchQuery] = useState('');
   const [memosSearchQuery, setMemosSearchQuery] = useState('');
   const [goalsSearchQuery, setGoalsSearchQuery] = useState('');
@@ -215,18 +205,27 @@ export default function App() {
     return () => window.removeEventListener('workbench:tags-updated', handleTagsUpdated);
   }, []);
 
+  // Listen to open write memo event
+  useEffect(() => {
+    const handleOpenWriteMemo = () => {
+      setIsQuickMemoOpen(true);
+    };
+    window.addEventListener('workbench:open-write-memo', handleOpenWriteMemo);
+    return () => window.removeEventListener('workbench:open-write-memo', handleOpenWriteMemo);
+  }, []);
+
   // Detail overlay state
   const [selectedObject, setSelectedObject] = useState<WorkbenchObject | null>(null);
 
   // Admin password authentication modal state
   const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
 
-  // Login flow: open password verification modal
+  // Login flow
   const handleOpenLogin = () => {
     setIsAdminAuthModalOpen(true);
   };
 
-  // On successful password input: elevate to owner and persist in session
+  // On successful password input
   const handleAdminAuthSuccess = () => {
     setIdentity({
       role: 'owner',
@@ -238,12 +237,11 @@ export default function App() {
     }
   };
 
-  // Logout flow: directly exit to guest with no password required
+  // Logout flow
   const handleLogout = () => {
     setIdentity({
       role: 'guest',
     });
-    setEditMode(false);
     setIsAddModalOpen(false);
     setEditingObject(null);
     try {
@@ -251,11 +249,6 @@ export default function App() {
     } catch {
       // ignore
     }
-  };
-
-  const handleToggleEditMode = () => {
-    if (identity.role !== 'owner') return;
-    setEditMode((prev) => !prev);
   };
 
   // Toggle pinned state
@@ -369,82 +362,49 @@ export default function App() {
     setIsAddModalOpen(true);
   };
 
-  // Save layout & objects
-  const handleSaveLayout = () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem('personal_workbench_objects', JSON.stringify(objects));
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-        setIsSaving(false);
-      }, 1000);
-    } catch {
-      setIsSaving(false);
-    }
+  const handleCreateTag = (newTag: string) => {
+    addCustomTag(newTag);
+    setCustomTags(getCustomTags());
   };
 
-  // Global footer and hotkey triggers: ⌘K (search), ESC (close modals/clear filters), Tab (category navigation)
-  const handleTriggerSearch = () => {
-    if (currentView !== 'workbench') {
-      navigateToWorkbench();
-    }
-    window.dispatchEvent(new CustomEvent('workbench:focus-search'));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleRenameTag = (oldTag: string, newTag: string) => {
+    renameTagAcrossStorage(oldTag, newTag);
+    setCustomTags(getCustomTags());
+    setObjects((prev) =>
+      prev.map((obj) => ({
+        ...obj,
+        tags: (obj.tags || []).map((t) => (t === oldTag ? newTag : t)),
+      }))
+    );
   };
 
-  const handleTriggerCloseOrClear = () => {
-    if (selectedObject) {
-      setSelectedObject(null);
-      return;
-    }
-    if (isAddModalOpen) {
-      setIsAddModalOpen(false);
-      setEditingObject(null);
-      return;
-    }
-    if (isAdminAuthModalOpen) {
-      setIsAdminAuthModalOpen(false);
-      return;
-    }
-    if (searchQuery) {
-      setSearchQuery('');
-      window.dispatchEvent(new CustomEvent('workbench:clear-search'));
-      return;
-    }
-    if (selectedCategory !== 'all') {
-      setSelectedCategory('all');
-      return;
-    }
-    if (editMode) {
-      setEditMode(false);
-    }
+  const handleDeleteTag = (tagToDelete: string) => {
+    deleteTagAcrossStorage(tagToDelete);
+    setCustomTags(getCustomTags());
+    setObjects((prev) =>
+      prev.map((obj) => ({
+        ...obj,
+        tags: (obj.tags || []).filter((t) => t !== tagToDelete),
+      }))
+    );
   };
 
-  const handleTriggerTabNavigate = (direction: number = 1) => {
-    if (currentView !== 'workbench') {
-      navigateToWorkbench();
-    }
-    const categories: FilterCategory[] = ['all', 'project', 'tool', 'web', 'learning', 'reference'];
-    const curIdx = categories.indexOf(selectedCategory);
-    const nextIdx = (curIdx + direction + categories.length) % categories.length;
-    setSelectedCategory(categories[nextIdx]);
-  };
-
-  // Global keydown handler for ⌘K and Escape across the entire app
+  // Global hotkeys: ⌘K (search), ESC (close modals/clear filters)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const targetTag = (e.target as HTMLElement)?.tagName?.toUpperCase();
       const isEditingText = targetTag === 'INPUT' || targetTag === 'TEXTAREA';
 
-      // 1. ⌘K or Ctrl+K or '/' (when not typing in form inputs): Focus search
+      // 1. ⌘K or Ctrl+K or '/'
       if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!isEditingText && e.key === '/')) {
         e.preventDefault();
-        handleTriggerSearch();
+        if (currentView !== 'workbench') {
+          navigateToWorkbench();
+        }
         return;
       }
 
-      // 2. Escape: Close topmost modal or clear search/filter
+      // 2. Escape
       if (e.key === 'Escape') {
         if (selectedObject) {
           e.preventDefault();
@@ -465,27 +425,16 @@ export default function App() {
         if (searchQuery) {
           e.preventDefault();
           setSearchQuery('');
-          window.dispatchEvent(new CustomEvent('workbench:clear-search'));
           return;
         }
-        if (memosSearchQuery) {
+        if (selectedTag) {
           e.preventDefault();
-          setMemosSearchQuery('');
-          return;
-        }
-        if (goalsSearchQuery) {
-          e.preventDefault();
-          setGoalsSearchQuery('');
+          setSelectedTag(null);
           return;
         }
         if (selectedCategory !== 'all') {
           e.preventDefault();
           setSelectedCategory('all');
-          return;
-        }
-        if (editMode) {
-          e.preventDefault();
-          setEditMode(false);
           return;
         }
       }
@@ -499,23 +448,11 @@ export default function App() {
     isAdminAuthModalOpen,
     searchQuery,
     selectedCategory,
-    editMode,
+    selectedTag,
     currentView,
   ]);
 
-  // Reset to seed data
-  const handleResetLayout = () => {
-    if (window.confirm('确定要重置并恢复默认 20 个初始入口排版吗？')) {
-      setObjects(SEED_OBJECTS);
-      try {
-        localStorage.removeItem('personal_workbench_objects');
-      } catch {
-        // ignore
-      }
-    }
-  };
-
-  // All extracted tags with frequency counts (including custom tags)
+  // All tags with counts
   const allTagsWithCount = useMemo(() => {
     const map = new Map<string, number>();
     customTags.forEach((t) => {
@@ -535,59 +472,7 @@ export default function App() {
       .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
   }, [objects, customTags]);
 
-  // Tag CRUD Handlers
-  const handleCreateTag = (newTag: string) => {
-    addCustomTag(newTag);
-    setCustomTags(getCustomTags());
-  };
-
-  const handleRenameTag = (oldTag: string, newTag: string) => {
-    renameTagAcrossStorage(oldTag, newTag);
-    setCustomTags(getCustomTags());
-    setObjects((prev) => {
-      const next = prev.map((obj) =>
-        obj.tags?.includes(oldTag)
-          ? {
-              ...obj,
-              tags: Array.from(
-                new Set(obj.tags.map((t) => (t === oldTag ? newTag : t)))
-              ),
-            }
-          : obj
-      );
-      try {
-        localStorage.setItem('personal_workbench_objects', JSON.stringify(next));
-      } catch (e) {
-        console.error(e);
-      }
-      return next;
-    });
-    if (selectedTag === oldTag) {
-      setSelectedTag(newTag);
-    }
-  };
-
-  const handleDeleteTag = (tagToDelete: string) => {
-    deleteTagAcrossStorage(tagToDelete);
-    setCustomTags(getCustomTags());
-    setObjects((prev) => {
-      const next = prev.map((obj) => ({
-        ...obj,
-        tags: (obj.tags || []).filter((t) => t !== tagToDelete),
-      }));
-      try {
-        localStorage.setItem('personal_workbench_objects', JSON.stringify(next));
-      } catch (e) {
-        console.error(e);
-      }
-      return next;
-    });
-    if (selectedTag === tagToDelete) {
-      setSelectedTag(null);
-    }
-  };
-
-  // Calculate 6 standard category counts
+  // Category counts
   const categoryCounts = useMemo(() => {
     const counts: Record<FilterCategory, number> = {
       all: objects.length,
@@ -619,12 +504,12 @@ export default function App() {
     return counts;
   }, [objects]);
 
-  // 4-Dimensional Filtered objects based on search query, category, and selected tag
+  // Filtered objects
   const filteredObjects = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
     return objects.filter((obj) => {
-      // Category filter (6 standard categories)
+      // Category filter
       if (selectedCategory !== 'all') {
         if (selectedCategory === 'project' && obj.type !== 'project' && obj.type !== 'app') {
           return false;
@@ -653,7 +538,7 @@ export default function App() {
         return false;
       }
 
-      // 4-Dimensional Search query filter: Title, Summary, Target/Path, Tags
+      // Search query
       if (!q) return true;
 
       const titleMatch = obj.title.toLowerCase().includes(q);
@@ -671,235 +556,271 @@ export default function App() {
   }, [objects]);
 
   const isOwner = identity.role === 'owner';
+  const hasActiveFilter = Boolean(searchQuery || selectedCategory !== 'all' || selectedTag);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedTag(null);
+  };
+
+  const currentResourceObject = currentResourceId
+    ? objects.find((o) => o.id === currentResourceId) || null
+    : null;
+
+  // Global search dispatcher across current active views
+  const currentSearchQuery =
+    currentView === 'memos'
+      ? memosSearchQuery
+      : currentView === 'goals'
+      ? goalsSearchQuery
+      : searchQuery;
+
+  const handleCurrentSearchChange = (q: string) => {
+    if (currentView === 'memos') {
+      setMemosSearchQuery(q);
+    } else if (currentView === 'goals') {
+      setGoalsSearchQuery(q);
+    } else {
+      setSearchQuery(q);
+    }
+  };
+
+  const searchPlaceholder =
+    currentView === 'memos'
+      ? '搜索备忘录/标签/内容...'
+      : currentView === 'goals'
+      ? '搜索目标/KR/周期...'
+      : '搜索标题/简介/标签...';
 
   return (
     <div className="min-h-screen flex flex-col workbench-bg selection:bg-[#FFD84D] selection:text-[#171717]">
-      {/* 1. Header: Persistent across both views, zero jumping */}
+      {/* 1. Header: Persistent & Clean (no edit mode buttons, no avatar green dot) */}
       <V4Header
         identity={identity}
         onLogin={handleOpenLogin}
         onLogout={handleLogout}
-        editMode={editMode}
-        onToggleEditMode={handleToggleEditMode}
-        onOpenAddForm={() => {
-          setEditingObject(null);
-          setIsAddModalOpen(true);
-        }}
         totalCount={objects.length}
         activeView={currentView}
         onSelectView={(v) => {
-          if (v === 'workbench') {
-            navigateToWorkbench();
-          } else if (v === 'memos') {
-            navigateToMemos();
-          } else if (v === 'goals') {
-            navigateToGoals();
-          } else {
-            navigateToDesignSystem();
-          }
+          if (v === 'workbench') navigateToWorkbench();
+          else if (v === 'memos') navigateToMemos();
+          else if (v === 'goals') navigateToGoals();
+          else navigateToWorkbench();
         }}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
-      {/* Owner Edit Toolbar for Workbench (Only in workbench view and editMode) */}
-      {isOwner && editMode && currentView === 'workbench' && (
-        <V4EditToolbar
-          onSave={handleSaveLayout}
-          onOpenAdd={() => {
+      {/* 2. Main Page Split Layout: Left PageSidebar + Right Content Canvas */}
+      <div className="flex-1 flex flex-row min-w-0">
+        {/* Left Sidebar Toolbar (Sticky on Desktop, Drawer on Mobile, Mini Icon Mode Support) */}
+        <PageSidebar
+          currentView={currentView}
+          onSelectView={(v) => {
+            if (v === 'workbench') navigateToWorkbench();
+            else if (v === 'memos') navigateToMemos();
+            else if (v === 'goals') navigateToGoals();
+            else navigateToWorkbench();
+          }}
+          identity={identity}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          // Global search pervasive across all pages
+          searchQuery={currentSearchQuery}
+          onSearchChange={handleCurrentSearchChange}
+          searchPlaceholder={searchPlaceholder}
+          // Workbench tools
+          onOpenAddResource={() => {
             setEditingObject(null);
             setIsAddModalOpen(true);
           }}
-          onReset={handleResetLayout}
-          isSaving={isSaving}
-          saveSuccess={saveSuccess}
+          onResetFilter={handleResetFilters}
+          hasActiveFilter={hasActiveFilter}
+          // Memos tools
+          onOpenAddMemo={() => {
+            setIsQuickMemoOpen(true);
+          }}
+          // Goals tools
+          onOpenAddGoal={() => {
+            window.dispatchEvent(new CustomEvent('workbench:open-create-goal'));
+          }}
+          // Resource detail tools
+          currentResource={currentResourceObject}
+          onBackToWorkbench={navigateToWorkbench}
+          onOpenPrimaryEntry={() => {
+            window.dispatchEvent(new CustomEvent('workbench:detail-open-primary'));
+          }}
+          onCopyResourceLink={() => {
+            try {
+              navigator.clipboard?.writeText(window.location.href);
+            } catch {
+              // ignore
+            }
+          }}
+          onTriggerEditDetail={() => {
+            window.dispatchEvent(new CustomEvent('workbench:detail-edit'));
+          }}
+          onTriggerAddBlock={() => {
+            window.dispatchEvent(new CustomEvent('workbench:detail-add-block'));
+          }}
+          onTriggerAddSecondaryEntry={() => {
+            window.dispatchEvent(new CustomEvent('workbench:detail-add-secondary'));
+          }}
+          onTriggerDeleteResource={() => {
+            window.dispatchEvent(new CustomEvent('workbench:detail-delete'));
+          }}
         />
-      )}
 
-      {/* Global Unified Search Toolbar: Persistent across all pages, searching the current page */}
-      <V4SearchToolbar
-        searchQuery={
-          currentView === 'workbench'
-            ? searchQuery
-            : currentView === 'memos'
-            ? memosSearchQuery
-            : currentView === 'goals'
-            ? goalsSearchQuery
-            : currentView === 'design-system'
-            ? dsSearchQuery
-            : searchQuery
-        }
-        onSearchChange={(q) => {
-          if (currentView === 'workbench') {
-            setSearchQuery(q);
-          } else if (currentView === 'memos') {
-            setMemosSearchQuery(q);
-          } else if (currentView === 'goals') {
-            setGoalsSearchQuery(q);
-          } else if (currentView === 'design-system') {
-            setDsSearchQuery(q);
-          } else {
-            setSearchQuery(q);
-          }
-        }}
-        selectedCategory={currentView === 'workbench' ? selectedCategory : undefined}
-        placeholder={
-          currentView === 'memos'
-            ? '搜索备忘标题、正文、标签…'
-            : currentView === 'goals'
-            ? '搜索目标标题、简介、具体链接、复盘笔记...'
-            : currentView === 'design-system'
-            ? '搜索设计规范 Tokens、色彩、组件与阴影规范...'
-            : '快速检索工作台标题、标签、摘要或入口路径（URL、本地路径、GitHub）...'
-        }
-        disabled={isOwner && editMode && currentView === 'workbench'}
-        isOwner={isOwner}
-        currentView={currentView}
-        onOpenWriteMemo={() => {
-          setIsQuickMemoOpen(true);
-        }}
-      />
-
-      {/* View routing: Workbench vs Memos vs Goals vs Design System vs Resource Detail (with silky smooth page-fade-in transition) */}
-      {currentView === 'design-system' ? (
-        <main key="design-system" className="flex-1 flex flex-col page-fade-in">
-          <DesignSystemPage
-            onBackToWorkbench={navigateToWorkbench}
-            searchQuery={dsSearchQuery}
-          />
-        </main>
-      ) : currentView === 'memos' ? (
-        <main key="memos" className="flex-1 flex flex-col page-fade-in">
-          <MemosPage
-            identity={identity}
-            editMode={editMode}
-            onBackToWorkbench={navigateToWorkbench}
-            searchQuery={memosSearchQuery}
-            onSearchChange={setMemosSearchQuery}
-          />
-        </main>
-      ) : currentView === 'goals' ? (
-        <main key="goals" className="flex-1 flex flex-col page-fade-in">
-          <GoalsPage
-            identity={identity}
-            editMode={editMode}
-            workbenchResources={objects}
-            onBackToWorkbench={navigateToWorkbench}
-            onNavigateToResource={navigateToResource}
-            searchQuery={goalsSearchQuery}
-            onSearchChange={setGoalsSearchQuery}
-          />
-        </main>
-      ) : currentView === 'resource-detail' ? (
-        <main key="resource-detail" className="flex-1 flex flex-col page-fade-in">
-          {objects.find((o) => o.id === currentResourceId) ? (
-            <ResourceDetailPage
-              object={objects.find((o) => o.id === currentResourceId)!}
-              identity={identity}
-              onBackToHome={navigateToWorkbench}
-              onSaveObject={handleSaveObject}
-              onDeleteObject={(id) => {
-                handleDeleteObject(id);
-                navigateToWorkbench();
-              }}
-            />
-          ) : (
-            <div className="w-full px-4 sm:px-8 py-16 text-center">
-              <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717] space-y-4">
-                <div className="w-12 h-12 bg-[#FFB4C6] border-2 border-[#171717] rounded-xl mx-auto flex items-center justify-center font-bold text-xl">
-                  !
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-[calc(100vh-60px)]">
+          {/* View routing: Workbench vs Memos vs Goals vs Resource Detail */}
+          {currentView === 'memos' ? (
+            <main key="memos" className="flex-1 flex flex-col page-fade-in">
+              <MemosPage
+                identity={identity}
+                onBackToWorkbench={navigateToWorkbench}
+                searchQuery={memosSearchQuery}
+                onSearchChange={setMemosSearchQuery}
+              />
+            </main>
+          ) : currentView === 'goals' ? (
+            <main key="goals" className="flex-1 flex flex-col page-fade-in">
+              <GoalsPage
+                identity={identity}
+                workbenchResources={objects}
+                onBackToWorkbench={navigateToWorkbench}
+                onNavigateToResource={navigateToResource}
+                searchQuery={goalsSearchQuery}
+                onSearchChange={setGoalsSearchQuery}
+              />
+            </main>
+          ) : currentView === 'resource-detail' ? (
+            <main key="resource-detail" className="flex-1 flex flex-col page-fade-in">
+              {currentResourceObject ? (
+                <ResourceDetailPage
+                  object={currentResourceObject}
+                  identity={identity}
+                  onBackToHome={navigateToWorkbench}
+                  onSaveObject={handleSaveObject}
+                  onDeleteObject={(id) => {
+                    handleDeleteObject(id);
+                    navigateToWorkbench();
+                  }}
+                />
+              ) : (
+                <div className="w-full px-4 sm:px-8 py-16 text-center">
+                  <div className="max-w-md mx-auto p-8 bg-[#FFFFFF] border-2 border-[#171717] rounded-2xl shadow-[6px_6px_0_#171717] space-y-4">
+                    <div className="w-12 h-12 bg-[#FFB4C6] border-2 border-[#171717] rounded-xl mx-auto flex items-center justify-center font-bold text-xl">
+                      !
+                    </div>
+                    <h2 className="text-xl font-bold text-[#171717]">未找到该资源档案</h2>
+                    <p className="text-xs font-mono text-[#5F5E5A]">
+                      资源档案可能已被移除或 ID 路径不存在。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={navigateToWorkbench}
+                      className="px-4 py-2 bg-[#FFD84D] hover:bg-[#FACC15] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[2px_2px_0_#171717] cursor-pointer"
+                    >
+                      返回工作台首页
+                    </button>
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-[#171717]">未找到该资源档案</h2>
-                <p className="text-xs font-mono text-[#5F5E5A]">
-                  资源档案可能已被移除或 ID 路径不存在。
-                </p>
-                <button
-                  type="button"
-                  onClick={navigateToWorkbench}
-                  className="px-4 py-2 bg-[#FFD84D] hover:bg-[#FACC15] border-2 border-[#171717] rounded-lg text-xs font-mono font-bold shadow-[2px_2px_0_#171717] cursor-pointer"
-                >
-                  返回工作台首页
-                </button>
+              )}
+            </main>
+          ) : (
+            <main key="workbench" className="flex-1 flex flex-col page-fade-in">
+              {/* Frozen Sticky Category & Tag Filter Top Bar */}
+              <div className="sticky top-0 z-20 bg-[#FBF7EF]/95 backdrop-blur-md pt-3.5 pb-4 sm:pt-4.5 sm:pb-5 border-b border-[#171717]/10">
+                <div className="w-full px-4 sm:px-8 space-y-3.5">
+                  {/* Category Switcher Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[40px]">
+                    <V4CategoryFilter
+                      selectedCategory={selectedCategory}
+                      onSelectCategory={setSelectedCategory}
+                      categoryCounts={categoryCounts}
+                    />
+                    {hasActiveFilter && (
+                      <button
+                        type="button"
+                        onClick={handleResetFilters}
+                        className="text-xs font-mono font-bold text-[#B91C1C] hover:underline cursor-pointer flex items-center gap-1 self-start sm:self-auto"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>重置筛选 ({filteredObjects.length}/{objects.length})</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Tag Filter Row */}
+                  <TagPanel
+                    tags={allTagsWithCount}
+                    selectedTag={selectedTag}
+                    onSelectTag={setSelectedTag}
+                    topLimit={8}
+                    isOwner={isOwner}
+                    onCreateTag={handleCreateTag}
+                    onRenameTag={handleRenameTag}
+                    onDeleteTag={handleDeleteTag}
+                    customClass="mt-0"
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </main>
-      ) : (
-        <main key="workbench" className="flex-1 flex flex-col page-fade-in">
-          {/* ===================== WORKBENCH CATEGORY & TAGS (Sticky Container 2) ===================== */}
-          <div
-            className="sticky z-20 bg-[#FBF7EF]/95 backdrop-blur-md pt-3.5 pb-4 sm:pt-4.5 sm:pb-5 border-b border-[#171717]/10"
-            style={{ top: 'var(--search-bar-height, 0px)' }}
-          >
-            <div className="w-full px-4 sm:px-8 space-y-3.5">
-              {/* Category Filter */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[40px]">
-                <V4CategoryFilter
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                  categoryCounts={categoryCounts}
-                  disabled={isOwner && editMode}
+
+              {/* Pinned Quick Picks Section (Only on clean workbench root) */}
+              {!searchQuery && selectedCategory === 'all' && !selectedTag && pinnedObjects.length > 0 && (
+                <V4PinnedSection
+                  pinnedObjects={pinnedObjects}
+                  onSelect={(obj) => setSelectedObject(obj)}
+                />
+              )}
+
+              {/* Section Title Bar */}
+              <div className="w-full px-4 sm:px-8 pt-5 pb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-4 bg-[#171717] rounded-xs" />
+                  <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase font-mono">
+                    {searchQuery
+                      ? `检索结果 (${filteredObjects.length})`
+                      : selectedTag
+                      ? `标签 #${selectedTag} (${filteredObjects.length})`
+                      : selectedCategory !== 'all'
+                      ? `分类筛选 (${filteredObjects.length})`
+                      : `全部工作台入口资产 (${filteredObjects.length})`}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-[#5F5E5A]">
+                  {isOwner && (
+                    <span className="hidden sm:inline text-[#10B981] font-bold">
+                      ✓ 可直接拖动卡片排序
+                    </span>
+                  )}
+                  <span>6 列网格</span>
+                </div>
+              </div>
+
+              {/* Main Resource Grid Canvas */}
+              <div className="flex-1">
+                <HomeGrid
+                  objects={filteredObjects}
+                  isOwner={isOwner}
+                  onSelectObject={(obj) => setSelectedObject(obj)}
+                  onTogglePin={handleTogglePin}
+                  onDeleteObject={handleDeleteObject}
+                  onReorder={handleReorder}
+                  onEditObject={handleOpenEdit}
+                  onChangeSize={handleChangeSize}
                 />
               </div>
-
-              {/* Tag Panel */}
-              <TagPanel
-                tags={allTagsWithCount}
-                selectedTag={selectedTag}
-                onSelectTag={setSelectedTag}
-                topLimit={8}
-                editMode={editMode}
-                isOwner={isOwner}
-                onCreateTag={handleCreateTag}
-                onRenameTag={handleRenameTag}
-                onDeleteTag={handleDeleteTag}
-              />
-            </div>
-          </div>
-
-          {/* 4. Pinned Quick Picks Section (Only on clean home page) */}
-          {!searchQuery && selectedCategory === 'all' && !selectedTag && (
-            <V4PinnedSection
-              pinnedObjects={pinnedObjects}
-              onSelect={(obj) => setSelectedObject(obj)}
-            />
+            </main>
           )}
 
-          {/* Section Title Bar */}
-          <div className="w-full px-4 sm:px-8 pt-6 sm:pt-8 pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-4 bg-[#171717] rounded-xs" />
-              <h2 className="text-sm font-bold text-[#171717] tracking-tight uppercase">
-                {searchQuery
-                  ? `检索结果 (${filteredObjects.length})`
-                  : selectedTag
-                  ? `标签 #${selectedTag} (${filteredObjects.length})`
-                  : selectedCategory !== 'all'
-                  ? `分类筛选 (${filteredObjects.length})`
-                  : `全部工作台入口资产 (${filteredObjects.length})`}
-              </h2>
-            </div>
-            <span className="text-xs font-mono text-[#5F5E5A]">
-              6 列 Neo-Brutalism 网格
-            </span>
-          </div>
+          {/* Global Status Footer */}
+          <V4Footer />
+        </div>
+      </div>
 
-          {/* 5. Main Resource Grid Canvas (with data-testid="home-grid") */}
-          <div className="flex-1">
-            <HomeGrid
-              objects={filteredObjects}
-              editMode={isOwner && editMode}
-              isOwner={isOwner}
-              onSelectObject={(obj) => setSelectedObject(obj)}
-              onTogglePin={handleTogglePin}
-              onDeleteObject={handleDeleteObject}
-              onReorder={handleReorder}
-              onEditObject={handleOpenEdit}
-              onChangeSize={handleChangeSize}
-            />
-          </div>
-        </main>
-      )}
-
-      {/* 6. Detail Modal Overlay */}
+      {/* 3. Detail Modal Overlay (Quick Preview on click) */}
       <DetailModal
         object={selectedObject}
         isOwner={isOwner}
@@ -910,7 +831,7 @@ export default function App() {
         onTogglePin={isOwner ? handleTogglePin : undefined}
       />
 
-      {/* 7. Add / Edit Resource Modal (Strictly omitted from DOM if Guest) */}
+      {/* 4. Add / Edit Resource Modal (Admin Only) */}
       {isOwner && (
         <AddResourceModal
           isOpen={isAddModalOpen}
@@ -923,14 +844,14 @@ export default function App() {
         />
       )}
 
-      {/* 8. Admin Password Authentication Modal */}
+      {/* 5. Admin Password Authentication Modal */}
       <AdminAuthModal
         isOpen={isAdminAuthModalOpen}
         onClose={() => setIsAdminAuthModalOpen(false)}
         onSuccess={handleAdminAuthSuccess}
       />
 
-      {/* 9. Floating Quick Memo Modal (Management Mode only) */}
+      {/* 6. Floating Quick Memo Modal */}
       {isOwner && isQuickMemoOpen && (
         <div
           role="dialog"
@@ -944,7 +865,6 @@ export default function App() {
           }}
         >
           <div className="w-full max-w-2xl bg-[#FFFFFF] border-3 border-[#171717] rounded-2xl shadow-[8px_8px_0_#171717] p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            {/* Modal Header: 仅保留标题与关闭按钮，中间的分割线 */}
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-3">
               <h3 className="font-bold text-base text-[#171717]">写备忘录</h3>
               <button
@@ -967,9 +887,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* 10. Global Status Footer: 底部文字链接直达规范库 */}
-      <V4Footer onOpenDesignSystem={navigateToDesignSystem} />
     </div>
   );
 }

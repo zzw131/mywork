@@ -386,7 +386,7 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
 
         {/* 1. Design Tokens: Colors */}
         {isMatch(['color', '颜色', '色彩', 'token', 'hex', 'paper', 'yellow', 'ink']) && (
-          <section className="space-y-4">
+          <section id="section-colors" className="space-y-4 scroll-mt-20">
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-2">
               <div className="flex items-center gap-2">
                 <Palette className="w-4 h-4" />
@@ -457,7 +457,7 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
 
         {/* 2. Shadows & Borders */}
         {isMatch(['shadow', 'border', '阴影', '圆角', '边框', '触感', '位移']) && (
-          <section className="space-y-4">
+          <section id="section-typography" className="space-y-4 scroll-mt-20">
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-2">
               <div className="flex items-center gap-2">
                 <Box className="w-4 h-4" />
@@ -571,7 +571,7 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
 
         {/* 4. Interactive Components: Button, Tag, Input, Filter */}
         {isMatch(['button', 'tag', 'input', 'filter', '按钮', '标签', '输入框', '分类', '交互']) && (
-          <section className="space-y-4">
+          <section id="section-components" className="space-y-4 scroll-mt-20">
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-2">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4" />
@@ -695,7 +695,7 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
 
         {/* 5. Resource Cards Matrix (Small, Wide, Large, Banner) */}
         {isMatch(['card', '卡片', '尺寸', 'size', 'matrix', 'small', 'wide', 'large', 'banner', '网格']) && (
-          <section className="space-y-4">
+          <section id="section-cards" className="space-y-4 scroll-mt-20">
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-2">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4" />
@@ -722,7 +722,6 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
                   <V4ResourceCard
                     object={sampleCardSmall}
                     isOwner={true}
-                    editMode={false}
                     onSelect={(obj) => setSelectedCardId(obj.id)}
                   />
                 </div>
@@ -743,7 +742,6 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
                   <V4ResourceCard
                     object={sampleCardWide}
                     isOwner={true}
-                    editMode={false}
                     onSelect={(obj) => setSelectedCardId(obj.id)}
                   />
                 </div>
@@ -764,7 +762,6 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
                   <V4ResourceCard
                     object={sampleCardLarge}
                     isOwner={true}
-                    editMode={false}
                     onSelect={(obj) => setSelectedCardId(obj.id)}
                   />
                 </div>
@@ -838,7 +835,6 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
                   <V4ResourceCard
                     object={sampleCardBanner}
                     isOwner={true}
-                    editMode={false}
                     onSelect={(obj) => setSelectedCardId(obj.id)}
                   />
                 </div>
@@ -967,7 +963,7 @@ export const DesignSystemPage: React.FC<DesignSystemPageProps> = ({
 
         {/* 8. Tab Anti-Clipping Standards (状态筛选 Tab 防裁剪铁律) */}
         {isMatch(['tab', 'clip', 'overflow', 'filter', '裁剪', '筛选', '阴影', '微位移']) && (
-          <section className="space-y-4">
+          <section id="section-layout" className="space-y-4 scroll-mt-20">
             <div className="flex items-center justify-between border-b-2 border-[#171717] pb-2">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { WorkbenchObject, TYPE_VISUAL_MAP } from '../../types';
 import { Resource, ResourceSize } from '../../types/resource';
 import { toResource, toDatabaseCardSize, executeEntry } from '../../adapters/resourceAdapter';
@@ -11,17 +11,18 @@ import {
   Check,
   GripVertical,
   Edit3,
-  Maximize2,
+  MoreHorizontal,
   CornerDownRight,
   Github,
   Globe,
   Folder,
+  Maximize2,
+  Layers,
 } from 'lucide-react';
 
 export interface ResourceCardProps {
   resource: Resource | WorkbenchObject;
   isOwner: boolean;
-  editMode?: boolean;
   selected?: boolean;
   disabled?: boolean;
   onSelect?: (resource: Resource) => void;
@@ -35,7 +36,6 @@ export interface ResourceCardProps {
 export const ResourceCard: React.FC<ResourceCardProps> = ({
   resource: rawResource,
   isOwner,
-  editMode = false,
   selected = false,
   disabled = false,
   onSelect,
@@ -48,6 +48,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   // Normalize via adapter
   const res: Resource = 'primaryEntry' in rawResource ? rawResource : toResource(rawResource as WorkbenchObject);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isSmall = res.size === 'small';
   const isMedium = res.size === 'medium';
@@ -55,6 +58,31 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   const isBanner = res.size === 'banner';
 
   const legacyCardSize = toDatabaseCardSize(res.size);
+
+  // Close more menu on click outside or ESC
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+        setConfirmDelete(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMoreMenuOpen(false);
+        setConfirmDelete(false);
+      }
+    };
+
+    if (moreMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moreMenuOpen]);
 
   const handleOpenAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,16 +103,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
     onSelect?.(res);
   };
 
-  const handleCycleSize = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onChangeSize) return;
-    const sizes: ResourceSize[] = ['small', 'medium', 'large', 'banner'];
-    const currentIndex = sizes.indexOf(res.size);
-    const nextSize = sizes[(currentIndex + 1) % sizes.length];
-    onChangeSize(res.id, nextSize);
-  };
-
-  // Entry icon
+  // Entry protocol icon
   const renderProtocolIcon = () => {
     switch (res.primaryEntry.protocol) {
       case 'github':
@@ -98,13 +117,20 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
     }
   };
 
+  const sizeLabels: { size: ResourceSize; label: string; desc: string }[] = [
+    { size: 'small', label: '紧凑 (小)', desc: '2列' },
+    { size: 'medium', label: '标准 (中)', desc: '4列' },
+    { size: 'large', label: '双高 (大)', desc: '4列 x 2高' },
+    { size: 'banner', label: '通栏 (横幅)', desc: '6列' },
+  ];
+
   return (
     <div
       data-testid="object-card"
       data-object-id={res.id}
       data-card-size={legacyCardSize}
       onClick={handleCardClick}
-      className={`v4-card group relative flex flex-col justify-between p-4 cursor-pointer overflow-hidden select-none h-full bg-[#FFFFFF] border-2 border-[#171717] rounded-xl transition-all duration-150 ${
+      className={`v4-card group relative flex flex-col justify-between p-4 cursor-pointer select-none h-full bg-[#FFFFFF] border-2 border-[#171717] rounded-xl transition-all duration-150 ${
         disabled
           ? 'opacity-60 bg-[#EDE8DC] shadow-none cursor-not-allowed pointer-events-none'
           : selected
@@ -112,7 +138,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           : 'shadow-[4px_4px_0_#171717] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#171717]'
       }`}
     >
-      {/* Top Header: Badge, Status, Pin, Owner Hover/Edit Toolbar */}
+      {/* Top Header: Badge, Status, Pin, Owner Action Group (Pencil + More Menu) */}
       <div className="flex items-start justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-2 flex-wrap">
           <V4Badge type={res.type} />
@@ -127,102 +153,176 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           )}
         </div>
 
-        {/* Owner Controls: STRICTLY excluded from DOM if not owner */}
+        {/* Owner Controls: STRICTLY excluded from DOM if visitor. Visible on hover for Admin */}
         {isOwner && (
           <div
-            className={`flex items-center gap-1 bg-[#EDE8DC] border border-[#171717] rounded px-1.5 py-0.5 shadow-[2px_2px_0_#171717] z-10 transition-opacity ml-auto ${
-              editMode
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto'
-            }`}
+            className="flex items-center gap-1.5 z-20 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity"
             onClick={(e) => e.stopPropagation()}
+            ref={menuRef}
           >
-            {/* Cycle Size Button */}
-            {onChangeSize && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCycleSize(e);
-                }}
-                className="px-1.5 py-0.5 text-[10px] font-mono font-bold hover:bg-[#FFD84D] rounded text-[#171717]"
-                title={`当前尺寸: ${
-                  res.size === 'small'
-                    ? '紧凑 (2列)'
-                    : res.size === 'medium'
-                    ? '标准 (4列)'
-                    : res.size === 'large'
-                    ? '双高 (4列)'
-                    : '通栏 (6列)'
-                } (点击切换)`}
-              >
-                {res.size === 'small'
-                  ? '紧凑'
-                  : res.size === 'medium'
-                  ? '标准'
-                  : res.size === 'large'
-                  ? '双高'
-                  : '通栏'}
-              </button>
-            )}
+            {/* 1. Drag Handle for easy reordering */}
+            <div
+              data-testid="drag-handle"
+              className="card__drag-handle cursor-grab active:cursor-grabbing p-1 text-[#5F5E5A] hover:text-[#171717] bg-[#EDE8DC] hover:bg-[#FFD84D] border border-[#171717] rounded transition-colors shadow-[1px_1px_0_#171717]"
+              title="按住拖拽排序卡片"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
 
-            {/* Pin Toggle Button */}
-            {onTogglePin && (
-              <button
-                type="button"
-                data-testid="pin-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTogglePin(res.id);
-                }}
-                className="p-1 hover:bg-[#FFD84D] rounded text-[#171717]"
-                title={res.pinned ? '取消置顶' : '置顶'}
-              >
-                <Pin className={`w-3 h-3 ${res.pinned ? 'fill-current' : ''}`} />
-              </button>
-            )}
-
-            {/* Edit Button */}
+            {/* 2. Pencil Edit Button: Direct Edit Resource */}
             {onEdit && (
               <button
                 type="button"
+                data-testid="edit-card-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit(res);
                 }}
-                className="p-1 hover:bg-[#FFD84D] rounded text-[#171717]"
-                title="编辑详情"
+                className="p-1 bg-[#FFFFFF] hover:bg-[#FFD84D] border border-[#171717] rounded text-[#171717] shadow-[1px_1px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                title="编辑卡片 (名称、简介、网址、标签)"
               >
-                <Edit3 className="w-3 h-3" />
+                <Edit3 className="w-3.5 h-3.5" />
               </button>
             )}
 
-            {/* Delete Button */}
-            {onDelete && (
+            {/* 3. More Menu Button: Dropdown for Pin, Size, Delete */}
+            <div className="relative">
               <button
                 type="button"
-                data-testid="delete-button"
+                data-testid="more-card-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(res.id);
+                  setMoreMenuOpen((prev) => !prev);
                 }}
-                className="p-1 hover:bg-[#FFB4C6] rounded text-[#171717]"
-                title="删除卡片"
+                className={`p-1 border border-[#171717] rounded text-[#171717] shadow-[1px_1px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer ${
+                  moreMenuOpen ? 'bg-[#FFD84D]' : 'bg-[#FFFFFF] hover:bg-[#EDE8DC]'
+                }`}
+                title="更多操作 (置顶、调整尺寸、删除)"
               >
-                <Trash2 className="w-3 h-3" />
+                <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
-            )}
 
-            {/* Drag Handle in edit mode */}
-            {editMode && (
-              <div
-                data-testid="drag-handle"
-                className="card__drag-handle cursor-grab active:cursor-grabbing p-1 text-[#171717] hover:bg-[#FFD84D] rounded"
-                title="按住拖拽卡片"
-              >
-                <GripVertical className="w-3.5 h-3.5" />
-              </div>
-            )}
+              {/* More Dropdown Menu */}
+              {moreMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-48 bg-[#FFFFFF] border-2 border-[#171717] rounded-xl shadow-[4px_4px_0_#171717] p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-mono text-xs text-left"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Pin / Unpin Action */}
+                  {onTogglePin && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePin(res.id);
+                        setMoreMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#FFF9E6] text-[#171717] font-bold transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Pin className={`w-3.5 h-3.5 ${res.pinned ? 'fill-current' : ''}`} />
+                        <span>{res.pinned ? '取消置顶' : '置顶卡片'}</span>
+                      </span>
+                      {res.pinned && (
+                        <span className="text-[10px] bg-[#FFD84D] px-1 rounded border border-[#171717]">
+                          PINNED
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Adjust Size Section */}
+                  {onChangeSize && (
+                    <div className="my-1.5 pt-1.5 border-t border-[#171717]/15">
+                      <div className="text-[10px] font-bold text-[#888780] uppercase px-2 mb-1 flex items-center gap-1">
+                        <Maximize2 className="w-3 h-3" />
+                        <span>调整卡片尺寸</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 px-1">
+                        {sizeLabels.map((sz) => {
+                          const isCurrent = res.size === sz.size;
+                          return (
+                            <button
+                              key={sz.size}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onChangeSize(res.id, sz.size);
+                                setMoreMenuOpen(false);
+                              }}
+                              className={`px-1.5 py-1 text-[11px] rounded border text-center transition-all cursor-pointer font-medium ${
+                                isCurrent
+                                  ? 'bg-[#171717] text-[#FFD84D] border-[#171717] font-bold'
+                                  : 'bg-[#FBF7EF] hover:bg-[#FFD84D] text-[#171717] border-[#171717]/20'
+                              }`}
+                              title={`${sz.label} (${sz.desc})`}
+                            >
+                              {sz.size === 'small'
+                                ? '小 2列'
+                                : sz.size === 'medium'
+                                ? '中 4列'
+                                : sz.size === 'large'
+                                ? '大 双高'
+                                : '横幅 6列'}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delete Section */}
+                  {onDelete && (
+                    <div className="mt-1.5 pt-1.5 border-t border-[#171717]/15">
+                      {confirmDelete ? (
+                        <div className="space-y-1 p-1 bg-[#FFE2E2] border border-[#B91C1C] rounded-lg">
+                          <div className="text-[10px] text-[#B91C1C] font-bold text-center">
+                            确定删除此卡片？
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(res.id);
+                                setMoreMenuOpen(false);
+                                setConfirmDelete(false);
+                              }}
+                              className="flex-1 py-1 bg-[#B91C1C] text-[#FFFFFF] text-[10px] font-bold rounded hover:bg-[#991B1B] text-center cursor-pointer"
+                            >
+                              确定
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDelete(false);
+                              }}
+                              className="flex-1 py-1 bg-[#EDE8DC] text-[#171717] text-[10px] font-bold rounded hover:bg-[#D3D1C7] text-center cursor-pointer"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          data-testid="delete-card-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDelete(true);
+                          }}
+                          className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[#FFE2E2] text-[#B91C1C] font-bold transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>删除卡片</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -259,11 +359,11 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           </div>
         )}
 
-        {/* Summary: hidden on small; single line on medium; multi-line on large */}
+        {/* Summary (shown on standard, large, banner) */}
         {!isSmall && res.summary && (
           <p
-            className={`text-xs text-[#5F5E5A] leading-relaxed mb-2 ${
-              isLarge ? 'line-clamp-3' : 'line-clamp-1'
+            className={`text-xs text-[#5F5E5A] leading-relaxed line-clamp-2 ${
+              isLarge ? 'line-clamp-4' : 'line-clamp-2'
             }`}
           >
             {res.summary}
@@ -271,69 +371,27 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         )}
       </div>
 
-      {/* Bottom Action & Tags Bar */}
-      <div className="pt-2 border-t border-[#EDE8DC] flex items-center justify-between gap-2 text-xs text-[#888780] font-mono mt-auto">
-        {/* Left: Tags and auxiliary info (strictly hidden on small, expanded on large) */}
-        <div className="flex items-center gap-1.5 flex-wrap overflow-hidden min-w-0">
-          {isSmall ? (
-            <span className="text-[10px] text-[#888780] font-mono truncate">
-              {res.primaryEntry.protocol === 'localPath' ? '本地路径' : res.primaryEntry.protocol === 'github' ? 'GitHub' : 'Web URL'}
+      {/* Footer: Tags & Update info */}
+      <div className="mt-3 pt-2.5 border-t border-[#EDE8DC] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap overflow-hidden max-h-6">
+          {(res.tags || []).slice(0, isSmall ? 1 : 3).map((tag) => (
+            <span
+              key={tag}
+              className="text-[10px] font-mono text-[#5F5E5A] bg-[#FBF7EF] border border-[#EDE8DC] px-1.5 py-0.2 rounded truncate max-w-[90px]"
+            >
+              #{tag}
             </span>
-          ) : isLarge ? (
-            <>
-              {res.tags && res.tags.length > 0 ? (
-                res.tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 bg-[#EDE8DC] text-[#171717] border border-[#171717] rounded text-[10px] font-semibold whitespace-nowrap"
-                  >
-                    #{tag}
-                  </span>
-                ))
-              ) : (
-                <span className="text-[11px] text-[#5F5E5A]">
-                  {TYPE_VISUAL_MAP[res.type]?.label || '其他'}
-                </span>
-              )}
-              <span className="text-[10px] text-[#888780] hidden sm:inline-block">
-                · {res.primaryEntry.protocol === 'localPath' ? '本地' : '远程'}
-              </span>
-            </>
-          ) : (
-            // Medium and banner: 1-2 tags or type label
-            res.tags && res.tags.length > 0 ? (
-              res.tags.slice(0, 2).map((tag) => (
-                <span
-                  key={tag}
-                  className="px-1.5 py-0.5 bg-[#EDE8DC] text-[#171717] border border-[#171717] rounded text-[10px] font-semibold whitespace-nowrap"
-                >
-                  #{tag}
-                </span>
-              ))
-            ) : (
-              <span className="text-[11px] text-[#5F5E5A]">
-                {TYPE_VISUAL_MAP[res.type]?.label || '其他'}
-              </span>
-            )
+          ))}
+          {(res.tags || []).length > (isSmall ? 1 : 3) && (
+            <span className="text-[10px] font-mono text-[#888780]">
+              +{(res.tags || []).length - (isSmall ? 1 : 3)}
+            </span>
           )}
         </div>
 
-        {/* Right: High Priority Open Button (always present and directly opens without opening modal) */}
-        <div className="flex items-center gap-1 shrink-0 ml-auto">
-          <button
-            type="button"
-            onClick={handleOpenAction}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold font-mono text-[#171717] bg-[#FFFFFF] hover:bg-[#FFD84D] border border-[#171717] rounded shadow-[1px_1px_0_#171717] active:translate-x-0.5 active:translate-y-0.5 transition-all whitespace-nowrap cursor-pointer"
-            title={res.primaryEntry.protocol === 'localPath' ? '复制本地路径' : '直接打开入口 (不触发详情)'}
-          >
-            <span>{res.primaryEntry.protocol === 'localPath' ? '复制' : '打开'}</span>
-            {res.primaryEntry.protocol === 'localPath' ? (
-              <Copy className="w-3 h-3" />
-            ) : (
-              <ExternalLink className="w-3 h-3" />
-            )}
-          </button>
-        </div>
+        <span className="text-[10px] font-mono text-[#888780] shrink-0">
+          {res.updatedAt}
+        </span>
       </div>
     </div>
   );

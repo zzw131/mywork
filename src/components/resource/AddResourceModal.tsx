@@ -538,7 +538,6 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                     <ResourceCard
                       resource={previewObject}
                       isOwner={true}
-                      editMode={false}
                       disabled={true}
                       onChangeSize={(_, nextSize) => setSize(nextSize)}
                     />
